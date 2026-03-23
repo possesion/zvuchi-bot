@@ -7,7 +7,7 @@ const bot = new TelegramBot(process.env.API_KEY_BOT, {
     polling: true
 });
 
-bot.on("polling_error", err => console.log(err.data.error?.message));
+bot.on("polling_error", err => console.log(err?.message));
 
 bot.on('contact', handleContact(bot));
 bot.on('text', handleText(bot));
