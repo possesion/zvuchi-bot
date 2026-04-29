@@ -15,6 +15,7 @@ async function getAuthToken() {
     }
 
     try {
+        console.log('Попытка получить токен от:', hostname);
         const res = await fetch(`${hostname}/v2api/auth/login`, {
             method: 'POST',
             headers: {
@@ -23,8 +24,13 @@ async function getAuthToken() {
             body: JSON.stringify({
                 email: process.env.CRM_EMAIL,
                 api_key: process.env.CRM_API_KEY
-            })
+            }),
+            timeout: 10000
         });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
 
         const data = await res.json();
 
@@ -35,9 +41,9 @@ async function getAuthToken() {
             return authToken;
         }
 
-        throw new Error('Не удалось получить токен');
+        throw new Error('Не удалось получить токен: ' + JSON.stringify(data));
     } catch (error) {
-        console.error('Ошибка получения токена:', error);
+        console.error('Ошибка получения токена:', error.message);
         throw error;
     }
 }
@@ -51,7 +57,8 @@ async function apiRequest(url, payload) {
             headers: {
                 'X-ALFACRM-TOKEN': token,
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            timeout: 10000
         });
 
         if (response.status === 401) {
@@ -65,15 +72,24 @@ async function apiRequest(url, payload) {
                 headers: {
                     'X-ALFACRM-TOKEN': newToken,
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                timeout: 10000
             });
+
+            if (!retryResponse.ok) {
+                throw new Error(`HTTP ${retryResponse.status} при повторном запросе`);
+            }
 
             return await retryResponse.json();
         }
 
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         return await response.json();
     } catch (error) {
-        console.error('Ошибка API запроса:', error);
+        console.error('Ошибка API запроса:', error.message);
         throw error;
     }
 }
