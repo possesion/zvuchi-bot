@@ -1,4 +1,4 @@
-const { savePhone, getPhone } = require('./database');
+const { savePhone, getPhone, setNotify } = require('./database');
 const { getClientData } = require('./api');
 const { pluralize } = require('./utils');
 
@@ -28,6 +28,25 @@ function handleText(bot) {
 
         if (text === '/start') {
             return bot.sendMessage(msg.chat.id, 'Вы запустили бота!');
+        }
+
+        if (text === '/notify') {
+            if (!userPhone) {
+                return bot.sendMessage(msg.chat.id, 'Сначала поделитесь номером телефона, чтобы подключить уведомления', {
+                    reply_markup: {
+                        keyboard: [[{ text: '📱 Отправить номер телефона', request_contact: true }]],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
+                });
+            }
+            setNotify(userId, true);
+            return bot.sendMessage(msg.chat.id, 'Уведомления включены! Вы будете получать напоминания о предстоящих занятиях.');
+        }
+
+        if (text === '/unsubscribe') {
+            setNotify(userId, false);
+            return bot.sendMessage(msg.chat.id, 'Уведомления отключены.');
         }
 
         if (!userPhone) {

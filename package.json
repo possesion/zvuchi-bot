@@ -13,6 +13,8 @@
   "dependencies": {
     "better-sqlite3": "^12.6.2",
     "dotenv": "^17.2.4",
+    "https-proxy-agent": "^9.1.0",
+    "node-cron": "^4.6.0",
     "node-telegram-bot-api": "^0.67.0"
   }
 }

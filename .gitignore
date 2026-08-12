@@ -1,1 +1,4 @@
 .env
+bot.db
+
+node_modules/
