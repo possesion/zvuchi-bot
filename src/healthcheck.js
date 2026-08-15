@@ -80,8 +80,10 @@ async function handleHealthcheck(req, res) {
 
         if (alertSent) {
             alertSent = false;
+            console.log('[healthcheck] Восстановление после сбоя — Alert State сброшен');
         }
 
+        console.log('[healthcheck] OK');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok' }));
     } catch (err) {
@@ -92,6 +94,7 @@ async function handleHealthcheck(req, res) {
             alertSent = true;
         }
 
+        console.error(`[healthcheck] ОШИБКА: ${message}`);
         res.writeHead(503, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'error', message }));
     }
