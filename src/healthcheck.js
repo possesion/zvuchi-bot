@@ -1,0 +1,124 @@
+'use strict';
+
+const http = require('node:http');
+const https = require('node:https');
+
+// In-memory alert state — сбрасывается только при успешном healthcheck
+let alertSent = false;
+
+/**
+ * Проверяет доступность Telegram API через метод getMe.
+ * Бросает ошибку при любом сбое: сетевом, таймауте, non-ok статусе или ok=false в теле.
+ */
+async function checkTelegramApi() {
+    const token = process.env.API_KEY_BOT;
+    const url = `https://api.telegram.org/bot${token}/getMe`;
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+
+    if (!res.ok) {
+        throw new Error(`Telegram getMe вернул HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (!data.ok) {
+        throw new Error(`Telegram getMe: ok=false, ${JSON.stringify(data)}`);
+    }
+}
+
+/**
+ * Отправляет алерт в Telegram через Alert Bot.
+ * Использует node:https напрямую, без npm-пакетов.
+ * @param {string} message - описание ошибки
+ */
+function sendAlert(message) {
+    const token = process.env.ALERT_BOT_TOKEN;
+    const chatId = process.env.ALERT_CHAT_ID;
+
+    if (!token || !chatId) {
+        console.warn('[healthcheck] ALERT_BOT_TOKEN или ALERT_CHAT_ID не заданы — алерт пропущен');
+        return;
+    }
+
+    const body = JSON.stringify({
+        chat_id: chatId,
+        text: `[Zvuchi Bot] Сбой при healthcheck: ${message}`
+    });
+
+    const options = {
+        hostname: 'api.telegram.org',
+        path: `/bot${token}/sendMessage`,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        if (res.statusCode !== 200) {
+            console.error(`[healthcheck] Ошибка отправки алерта: HTTP ${res.statusCode}`);
+        }
+    });
+
+    req.on('error', (e) => console.error('[healthcheck] Ошибка HTTPS при отправке алерта:', e.message));
+    req.write(body);
+    req.end();
+}
+
+/**
+ * Обрабатывает GET /healthcheck:
+ * - вызывает checkTelegramApi()
+ * - при успехе сбрасывает alertSent, отвечает 200
+ * - при сбое отправляет однократный алерт, отвечает 503
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ */
+async function handleHealthcheck(req, res) {
+    try {
+        await checkTelegramApi();
+
+        if (alertSent) {
+            alertSent = false;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+    } catch (err) {
+        const message = err.message || String(err);
+
+        if (!alertSent) {
+            sendAlert(message);
+            alertSent = true;
+        }
+
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'error', message }));
+    }
+}
+
+/**
+ * Запускает HTTP-сервер для healthcheck.
+ * @param {number} [port] - порт для прослушивания (по умолчанию HEALTHCHECK_PORT || 3000)
+ * @returns {http.Server}
+ */
+function startHealthcheckServer(port) {
+    const listenPort = port || Number(process.env.HEALTHCHECK_PORT) || 3000;
+
+    const server = http.createServer((req, res) => {
+        if (req.url === '/healthcheck') {
+            handleHealthcheck(req, res);
+        } else {
+            res.writeHead(404);
+            res.end();
+        }
+    });
+
+    server.listen(listenPort, () => {
+        console.log(`[healthcheck] HTTP-сервер слушает порт ${listenPort}`);
+    });
+
+    return server;
+}
+
+module.exports = { startHealthcheckServer };

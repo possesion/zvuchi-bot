@@ -4,6 +4,7 @@ const cron = require('node-cron');
 
 const { handleContact, handleText } = require('./src/handlers');
 const { runDailyCheck } = require('./src/notifications');
+const { startHealthcheckServer } = require('./src/healthcheck');
 
 const bot = new TelegramBot(process.env.API_KEY_BOT, {
     polling: true
@@ -23,3 +24,6 @@ cron.schedule('0 0 * * *', () => {
 });
 
 console.log('Бот запущен...');
+
+startHealthcheckServer();
+console.log('Healthcheck сервер запущен');
