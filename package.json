@@ -8,7 +8,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --runInBand"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
@@ -16,5 +19,9 @@
     "https-proxy-agent": "^9.1.0",
     "node-cron": "^4.6.0",
     "node-telegram-bot-api": "^0.67.0"
+  },
+  "devDependencies": {
+    "fast-check": "^4.9.0",
+    "jest": "^30.4.2"
   }
 }

@@ -1,0 +1,128 @@
+{
+  "pbtResults": {
+    "1. Написать exploration-тест баг-условия": {
+      "status": "passed",
+      "failingExample": "Property failed after 1 tests { seed: 42, path: \"0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0\" } Counterexample: [1,\"70000000000\",\"70000000000\"] Shrunk 19 time(s). Контрпример: savePhone(userId=1, phone=\"70000000000\") при существующем пользователе с notify=1 → notify стал 0. Unit-тест: Expected: true, Received: false.",
+      "lastRunTimestamp": 1787588987697
+    },
+    "2. Написать preservation-тесты (ДО реализации исправления)": {
+      "status": "passed",
+      "lastRunTimestamp": 1787589119314
+    },
+    "3.2 Убедиться, что exploration-тест теперь проходит": {
+      "status": "passed",
+      "lastRunTimestamp": 1787589320365
+    }
+  },
+  "executionHistory": {
+    "1. Написать exploration-тест баг-условия": [
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787587658630
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787587668017
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589015676
+      }
+    ],
+    "2. Написать preservation-тесты (ДО реализации исправления)": [
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787587658651
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589019492
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589145286
+      }
+    ],
+    "3.1 Реализовать исправление в src/database.js": [
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787587658674
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589149885
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589183825
+      }
+    ],
+    "3.2 Убедиться, что exploration-тест теперь проходит": [
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787587658698
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589187210
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589336556
+      }
+    ],
+    "3.3 Убедиться, что preservation-тесты по-прежнему проходят": [
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787587658714
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589340440
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589410598
+      }
+    ],
+    "4. Checkpoint — все тесты проходят": [
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787587658731
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589414151
+      },
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589762114
+      }
+    ],
+    "3. Исправление: сохранение notify при обновлении номера телефона": [
+      {
+        "executionId": "6f4af06a-0413-453f-8126-c8734ad8027f",
+        "chatSessionId": "sess_92198a1d-9776-4a4e-8930-bb37b25c69e7",
+        "timestamp": 1787589410630
+      }
+    ]
+  }
+}

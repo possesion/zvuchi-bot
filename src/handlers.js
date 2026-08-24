@@ -1,6 +1,7 @@
 const { savePhone, getPhone, setNotify } = require('./database');
 const { getClientData } = require('./api');
 const { pluralize } = require('./utils');
+const { syncSchedule } = require('./notifications');
 
 function handleContact(bot) {
     return (msg) => {
@@ -41,6 +42,7 @@ function handleText(bot) {
                 });
             }
             setNotify(userId, true);
+            syncSchedule(bot, [userId]).catch(e => console.error('Ошибка syncSchedule при /notify:', e));
             return bot.sendMessage(msg.chat.id, 'Уведомления включены! Вы будете получать напоминания о предстоящих занятиях.');
         }
 

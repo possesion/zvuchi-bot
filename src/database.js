@@ -28,8 +28,25 @@ function initializeNotifyColumn() {
 
 initializeNotifyColumn();
 
+function initializeScheduleColumns() {
+    const migrations = [
+        'ALTER TABLE users ADD COLUMN next_lesson_date TEXT DEFAULT NULL',
+        'ALTER TABLE users ADD COLUMN scheduled_at INTEGER DEFAULT NULL',
+        'ALTER TABLE users ADD COLUMN sent BOOLEAN DEFAULT 0',
+    ];
+    for (const sql of migrations) {
+        try {
+            db.exec(sql);
+        } catch (error) {
+            if (!error.message.includes('duplicate column name')) throw error;
+        }
+    }
+}
+
+initializeScheduleColumns();
+
 function savePhone(userId, phone) {
-    const stmt = db.prepare('INSERT OR REPLACE INTO users (user_id, phone_number) VALUES (?, ?)');
+    const stmt = db.prepare('INSERT INTO users (user_id, phone_number) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET phone_number = excluded.phone_number');
     const formattedPhone = phone.replace(/\D/g, '');
     stmt.run(userId, formattedPhone);
 }
@@ -56,11 +73,42 @@ function getSubscribedUsers() {
     return stmt.all();
 }
 
+function setSchedule(userId, nextLessonDate, scheduledAt) {
+    const stmt = db.prepare('UPDATE users SET next_lesson_date = ?, scheduled_at = ?, sent = 0 WHERE user_id = ?');
+    stmt.run(nextLessonDate, scheduledAt, userId);
+}
+
+function clearSchedule(userId) {
+    const stmt = db.prepare('UPDATE users SET next_lesson_date = NULL, scheduled_at = NULL, sent = 0 WHERE user_id = ?');
+    stmt.run(userId);
+}
+
+function getSchedule(userId) {
+    const stmt = db.prepare('SELECT next_lesson_date, scheduled_at, sent FROM users WHERE user_id = ?');
+    const row = stmt.get(userId);
+    return row || null;
+}
+
+function getPendingSchedules() {
+    const stmt = db.prepare('SELECT user_id, next_lesson_date, scheduled_at FROM users WHERE scheduled_at IS NOT NULL AND sent = 0 AND notify = 1');
+    return stmt.all();
+}
+
+function markSent(userId) {
+    const stmt = db.prepare('UPDATE users SET sent = 1 WHERE user_id = ?');
+    stmt.run(userId);
+}
+
 module.exports = {
     savePhone,
     getPhone,
     setNotify,
     getNotify,
     getSubscribedUsers,
-    initializeNotifyColumn
+    initializeNotifyColumn,
+    setSchedule,
+    clearSchedule,
+    getSchedule,
+    getPendingSchedules,
+    markSent,
 };

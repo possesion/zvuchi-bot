@@ -1,0 +1,10 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration test": {
+      "status": "passed",
+      "failingExample": "Test 1 (Сценарий A) — Property counterexample: [new Date(\"2024-12-31T21:00:00.000Z\"), 0.10000000149011612]. shouldSendNotification returns false when lessonDate is same calendar day as now and 0 < hoursUntilLesson < 24. Expected true.\n\nTest 2 (Сценарий B) — SqliteError: \"no such column: scheduled_at\" (and sent, next_lesson_date). Original schema has no persistence columns.\n\nTest 3 (CRM-ошибка) — bot.sendMessage called 1 time with args (42, \"Не могу получить данные об уроке в CRM\"). Expected 0 calls. Property counterexample: [[1]].",
+      "lastRunTimestamp": 1787592862741
+    }
+  },
+  "executionHistory": {}
+}
