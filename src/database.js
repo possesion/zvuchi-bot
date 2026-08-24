@@ -90,7 +90,7 @@ function getSchedule(userId) {
 }
 
 function getPendingSchedules() {
-    const stmt = db.prepare('SELECT user_id, next_lesson_date, scheduled_at FROM users WHERE scheduled_at IS NOT NULL AND sent = 0 AND notify = 1');
+    const stmt = db.prepare('SELECT user_id, name, next_lesson_date, scheduled_at FROM users WHERE scheduled_at IS NOT NULL AND sent = 0 AND notify = 1');
     return stmt.all();
 }
 
