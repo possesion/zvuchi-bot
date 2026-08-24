@@ -32,13 +32,20 @@ function extractTime(dateString) {
 
 /**
  * Формирует текст уведомления.
- * @param {object} clientData - данные клиента из CRM
+ * @param {object} params
+ * @param {string} params.name
+ * @param {string} params.next_lesson_date
+ * @param {number|null} [params.paid_count]
  * @returns {string}
  */
-function formatNotificationMessage(clientData) {
-    const lessonTime = extractTime(clientData.next_lesson_date);
-    const clientName = clientData.name || 'студент';
-    return `Привет, ${clientName}, завтра в ${lessonTime} у тебя урок по вокалу.`;
+function formatNotificationMessage({ name, next_lesson_date, paid_count }) {
+    const lessonTime = extractTime(next_lesson_date);
+    const clientName = name || 'студент';
+    let message = `${clientName}, напоминаем о завтрашнем уроке в ${lessonTime}`;
+    if (paid_count === 1) {
+        message += '\nСледующий урок последний в вашем абонементе. Спасибо, что выбираете студию Звучи!❤️';
+    }
+    return message;
 }
 
 /**
@@ -66,6 +73,7 @@ async function getClientDataWithRetry(phone, retries = 1) {
  * Защита от двойной отправки: перед отправкой проверяет актуальность scheduled_at в БД.
  * @param {import('node-telegram-bot-api')} bot
  * @param {number} userId
+ * @param {string} username
  * @param {string} nextLessonDate
  * @param {number} scheduledAt - Unix timestamp в мс
  */
@@ -78,7 +86,11 @@ function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt
             const record = getSchedule(userId);
             // Защита от двойной отправки: дата могла измениться
             if (!record || record.scheduled_at !== scheduledAt || record.sent) return;
-            await bot.sendMessage(userId, formatNotificationMessage({ name:username, next_lesson_date: nextLessonDate }));
+            await bot.sendMessage(userId, formatNotificationMessage({
+                name: username,
+                next_lesson_date: nextLessonDate,
+                paid_count: record.paid_count ?? null,
+            }));
             markSent(userId);
             console.log(`Уведомление отправлено пользователю ${userId}`);
         } catch (e) {
@@ -142,7 +154,7 @@ async function syncSchedule(bot, userIds = null) {
 
             const lessonDate = parseLessonDate(clientData.next_lesson_date);
             const scheduledAt = lessonDate.getTime() - 24 * 60 * 60 * 1000;
-            setSchedule(user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt);
+            setSchedule(user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt, clientData.paid_count ?? null);
             scheduleNotification(bot, user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt);
         } catch (error) {
             console.error(`Ошибка при обработке пользователя ${user.user_id}:`, error.message);

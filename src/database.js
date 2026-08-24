@@ -34,6 +34,7 @@ function initializeScheduleColumns() {
         'ALTER TABLE users ADD COLUMN scheduled_at INTEGER DEFAULT NULL',
         'ALTER TABLE users ADD COLUMN sent BOOLEAN DEFAULT 0',
         'ALTER TABLE users ADD COLUMN name TEXT DEFAULT NULL',
+        'ALTER TABLE users ADD COLUMN paid_count INTEGER DEFAULT NULL',
     ];
     for (const sql of migrations) {
         try {
@@ -74,9 +75,9 @@ function getSubscribedUsers() {
     return stmt.all();
 }
 
-function setSchedule(userId, name, nextLessonDate, scheduledAt) {
-    const stmt = db.prepare('UPDATE users SET name = ?, next_lesson_date = ?, scheduled_at = ?, sent = 0 WHERE user_id = ?');
-    stmt.run(name || null, nextLessonDate, scheduledAt, userId);
+function setSchedule(userId, name, nextLessonDate, scheduledAt, paidCount) {
+    const stmt = db.prepare('UPDATE users SET name = ?, next_lesson_date = ?, scheduled_at = ?, sent = 0, paid_count = ? WHERE user_id = ?');
+    stmt.run(name || null, nextLessonDate, scheduledAt, paidCount ?? null, userId);
 }
 
 function clearSchedule(userId) {
@@ -85,13 +86,13 @@ function clearSchedule(userId) {
 }
 
 function getSchedule(userId) {
-    const stmt = db.prepare('SELECT next_lesson_date, scheduled_at, sent FROM users WHERE user_id = ?');
+    const stmt = db.prepare('SELECT next_lesson_date, scheduled_at, sent, paid_count FROM users WHERE user_id = ?');
     const row = stmt.get(userId);
     return row || null;
 }
 
 function getPendingSchedules() {
-    const stmt = db.prepare('SELECT user_id, name, next_lesson_date, scheduled_at FROM users WHERE scheduled_at IS NOT NULL AND sent = 0 AND notify = 1');
+    const stmt = db.prepare('SELECT user_id, name, next_lesson_date, scheduled_at, paid_count FROM users WHERE scheduled_at IS NOT NULL AND sent = 0 AND notify = 1');
     return stmt.all();
 }
 
