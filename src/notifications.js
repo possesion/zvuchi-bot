@@ -69,16 +69,16 @@ async function getClientDataWithRetry(phone, retries = 1) {
  * @param {string} nextLessonDate
  * @param {number} scheduledAt - Unix timestamp в мс
  */
-function scheduleNotification(bot, userId, nextLessonDate, scheduledAt) {
+function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt) {
     const delay = scheduledAt - Date.now();
-    console.log(`Уведомление будет отправлено пользователю ${userId} в ${delay}`);
+    console.log(`Уведомление будет отправлено пользователю ${username}`);
     if (delay <= 0) return; // просрочено — пропустить
     setTimeout(async () => {
         try {
             const record = getSchedule(userId);
             // Защита от двойной отправки: дата могла измениться
             if (!record || record.scheduled_at !== scheduledAt || record.sent) return;
-            await bot.sendMessage(userId, formatNotificationMessage({ next_lesson_date: nextLessonDate }));
+            await bot.sendMessage(userId, formatNotificationMessage({ name:username, next_lesson_date: nextLessonDate }));
             markSent(userId);
             console.log(`Уведомление отправлено пользователю ${userId}`);
         } catch (e) {
@@ -97,7 +97,7 @@ async function restoreSchedules(bot) {
     const pending = getPendingSchedules();
     console.log(`Восстановление расписания: ${pending.length} записей`);
     for (const row of pending) {
-        scheduleNotification(bot, row.user_id, row.next_lesson_date, row.scheduled_at);
+        scheduleNotification(bot, row.user_id, row.name, row.next_lesson_date, row.scheduled_at);
     }
 }
 
