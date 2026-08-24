@@ -33,6 +33,7 @@ function initializeScheduleColumns() {
         'ALTER TABLE users ADD COLUMN next_lesson_date TEXT DEFAULT NULL',
         'ALTER TABLE users ADD COLUMN scheduled_at INTEGER DEFAULT NULL',
         'ALTER TABLE users ADD COLUMN sent BOOLEAN DEFAULT 0',
+        'ALTER TABLE users ADD COLUMN name TEXT DEFAULT NULL',
     ];
     for (const sql of migrations) {
         try {
@@ -73,9 +74,9 @@ function getSubscribedUsers() {
     return stmt.all();
 }
 
-function setSchedule(userId, nextLessonDate, scheduledAt) {
-    const stmt = db.prepare('UPDATE users SET next_lesson_date = ?, scheduled_at = ?, sent = 0 WHERE user_id = ?');
-    stmt.run(nextLessonDate, scheduledAt, userId);
+function setSchedule(userId, name, nextLessonDate, scheduledAt) {
+    const stmt = db.prepare('UPDATE users SET name = ?, next_lesson_date = ?, scheduled_at = ?, sent = 0 WHERE user_id = ?');
+    stmt.run(name || null, nextLessonDate, scheduledAt, userId);
 }
 
 function clearSchedule(userId) {
