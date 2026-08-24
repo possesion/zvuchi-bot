@@ -143,7 +143,7 @@ async function syncSchedule(bot, userIds = null) {
             const lessonDate = parseLessonDate(clientData.next_lesson_date);
             const scheduledAt = lessonDate.getTime() - 24 * 60 * 60 * 1000;
             setSchedule(user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt);
-            scheduleNotification(bot, user.user_id, user.name, clientData.next_lesson_date, scheduledAt);
+            scheduleNotification(bot, user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt);
         } catch (error) {
             console.error(`Ошибка при обработке пользователя ${user.user_id}:`, error.message);
         }
