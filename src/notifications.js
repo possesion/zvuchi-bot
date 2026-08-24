@@ -5,25 +5,29 @@ const { getClientData } = require('./api');
 
 /**
  * Парсит строку даты занятия из CRM.
- * @param {string} dateString - формат "DD.MM.YYYY HH:MM"
+ * CRM возвращает время в московской зоне (UTC+3).
+ * Парсим через ISO-строку с явным смещением +03:00 чтобы не зависеть
+ * от часового пояса сервера.
+ * @param {string} dateString - формат "YYYY-MM-DD HH:MM:SS"
  * @returns {Date}
  */
 function parseLessonDate(dateString) {
-    const [datePart, timePart] = dateString.split(' ');
-    const [day, month, year] = datePart.split('.').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
-    // Месяцы в JS 0-индексированы
-    return new Date(year, month - 1, day, hours, minutes);
+    // "2026-08-25 21:18:01" → "2026-08-25T21:18:01+03:00"
+    const isoString = dateString.replace(' ', 'T').replace(/(\d{2}:\d{2}:\d{2})$/, '$1+03:00')
+        // на случай если секунд нет: "2026-08-25 21:18" → "2026-08-25T21:18+03:00"
+        .replace(/T(\d{2}:\d{2})$/, 'T$1:00+03:00');
+    return new Date(isoString);
 }
 
 /**
  * Извлекает время HH:MM из строки даты.
- * @param {string} dateString - формат "DD.MM.YYYY HH:MM"
+ * @param {string} dateString - формат "YYYY-MM-DD HH:MM:SS"
  * @returns {string} "HH:MM"
  */
 function extractTime(dateString) {
-    const parts = dateString.split(' ');
-    return parts[1];
+    const timePart = dateString.split(' ')[1];
+    // Берём только HH:MM, отбрасывая секунды если они есть
+    return timePart.slice(0, 5);
 }
 
 /**
@@ -65,15 +69,16 @@ async function getClientDataWithRetry(phone, retries = 1) {
  * @param {string} nextLessonDate
  * @param {number} scheduledAt - Unix timestamp в мс
  */
-function scheduleNotification(bot, userId, nextLessonDate, scheduledAt) {
+function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt) {
     const delay = scheduledAt - Date.now();
+    console.log(`Уведомление будет отправлено пользователю ${username}`);
     if (delay <= 0) return; // просрочено — пропустить
     setTimeout(async () => {
         try {
             const record = getSchedule(userId);
             // Защита от двойной отправки: дата могла измениться
             if (!record || record.scheduled_at !== scheduledAt || record.sent) return;
-            await bot.sendMessage(userId, formatNotificationMessage({ next_lesson_date: nextLessonDate }));
+            await bot.sendMessage(userId, formatNotificationMessage({ name:username, next_lesson_date: nextLessonDate }));
             markSent(userId);
             console.log(`Уведомление отправлено пользователю ${userId}`);
         } catch (e) {
@@ -92,7 +97,7 @@ async function restoreSchedules(bot) {
     const pending = getPendingSchedules();
     console.log(`Восстановление расписания: ${pending.length} записей`);
     for (const row of pending) {
-        scheduleNotification(bot, row.user_id, row.next_lesson_date, row.scheduled_at);
+        scheduleNotification(bot, row.user_id, row.name, row.next_lesson_date, row.scheduled_at);
     }
 }
 
