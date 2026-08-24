@@ -67,6 +67,7 @@ async function getClientDataWithRetry(phone, retries = 1) {
  */
 function scheduleNotification(bot, userId, nextLessonDate, scheduledAt) {
     const delay = scheduledAt - Date.now();
+    console.log(`Уведомление будет отправлено пользователю ${userId} в ${delay}`);
     if (delay <= 0) return; // просрочено — пропустить
     setTimeout(async () => {
         try {
