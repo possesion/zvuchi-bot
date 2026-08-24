@@ -5,12 +5,12 @@ const { getClientData } = require('./api');
 
 /**
  * Парсит строку даты занятия из CRM.
- * @param {string} dateString - формат "DD.MM.YYYY HH:MM"
+ * @param {string} dateString - формат "YYYY-MM-DD HH:MM:SS"
  * @returns {Date}
  */
 function parseLessonDate(dateString) {
     const [datePart, timePart] = dateString.split(' ');
-    const [day, month, year] = datePart.split('.').map(Number);
+    const [year, month, day] = datePart.split('-').map(Number);
     const [hours, minutes] = timePart.split(':').map(Number);
     // Месяцы в JS 0-индексированы
     return new Date(year, month - 1, day, hours, minutes);
@@ -18,12 +18,13 @@ function parseLessonDate(dateString) {
 
 /**
  * Извлекает время HH:MM из строки даты.
- * @param {string} dateString - формат "DD.MM.YYYY HH:MM"
+ * @param {string} dateString - формат "YYYY-MM-DD HH:MM:SS"
  * @returns {string} "HH:MM"
  */
 function extractTime(dateString) {
-    const parts = dateString.split(' ');
-    return parts[1];
+    const timePart = dateString.split(' ')[1];
+    // Берём только HH:MM, отбрасывая секунды если они есть
+    return timePart.slice(0, 5);
 }
 
 /**
