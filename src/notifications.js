@@ -5,15 +5,18 @@ const { getClientData } = require('./api');
 
 /**
  * Парсит строку даты занятия из CRM.
+ * CRM возвращает время в московской зоне (UTC+3).
+ * Парсим через ISO-строку с явным смещением +03:00 чтобы не зависеть
+ * от часового пояса сервера.
  * @param {string} dateString - формат "YYYY-MM-DD HH:MM:SS"
  * @returns {Date}
  */
 function parseLessonDate(dateString) {
-    const [datePart, timePart] = dateString.split(' ');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
-    // Месяцы в JS 0-индексированы
-    return new Date(year, month - 1, day, hours, minutes);
+    // "2026-08-25 21:18:01" → "2026-08-25T21:18:01+03:00"
+    const isoString = dateString.replace(' ', 'T').replace(/(\d{2}:\d{2}:\d{2})$/, '$1+03:00')
+        // на случай если секунд нет: "2026-08-25 21:18" → "2026-08-25T21:18+03:00"
+        .replace(/T(\d{2}:\d{2})$/, 'T$1:00+03:00');
+    return new Date(isoString);
 }
 
 /**
