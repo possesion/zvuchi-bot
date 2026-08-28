@@ -97,8 +97,9 @@ function getPendingSchedules() {
 }
 
 function markSent(userId) {
-    const stmt = db.prepare('UPDATE users SET sent = 1 WHERE user_id = ?');
-    stmt.run(userId);
+    const stmt = db.prepare('UPDATE users SET sent = 1 WHERE user_id = ? AND sent = 0');
+    const result = stmt.run(userId);
+    return result.changes > 0; // true если строка была обновлена, false если sent уже был 1
 }
 
 module.exports = {

@@ -70,7 +70,7 @@ async function getClientDataWithRetry(phone, retries = 1) {
 /**
  * Ставит setTimeout на точный момент отправки уведомления.
  * Просроченные записи (delay <= 0) пропускаются автоматически.
- * Защита от двойной отправки: перед отправкой проверяет актуальность scheduled_at в БД.
+ * Защита от двойной отправки: использует атомарный markSent() — только первый таймер пройдёт.
  * @param {import('node-telegram-bot-api')} bot
  * @param {number} userId
  * @param {string} username
@@ -84,14 +84,21 @@ function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt
     setTimeout(async () => {
         try {
             const record = getSchedule(userId);
-            // Защита от двойной отправки: дата могла измениться
+            // Защита: дата могла измениться или уже отправлено
             if (!record || record.scheduled_at !== scheduledAt || record.sent) return;
+            
+            // Атомарная операция: только один таймер пройдёт
+            const wasSent = markSent(userId);
+            if (!wasSent) {
+                console.log(`Уведомление для ${userId} уже отправлено другим таймером`);
+                return;
+            }
+            
             await bot.sendMessage(userId, formatNotificationMessage({
                 name: username,
                 next_lesson_date: nextLessonDate,
                 paid_count: record.paid_count ?? null,
             }));
-            markSent(userId);
             console.log(`Уведомление отправлено пользователю ${userId}`);
         } catch (e) {
             console.error(`Ошибка отправки уведомления для ${userId}:`, e.message);
