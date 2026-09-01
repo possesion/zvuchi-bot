@@ -1,0 +1,14 @@
+node_modules
+.env
+.git
+bot.db
+data/
+npm-debug.log
+.DS_Store
+README.md
+.dockerignore
+Dockerfile
+docker-compose.yml
+.kiro/
+.gitignore
+*.test.js
