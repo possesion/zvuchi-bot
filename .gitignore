@@ -4,6 +4,6 @@ bot.db
 node_modules/
 
 # Grafana and Loki data
-config/
+# config/
 grafana-data/
 loki-data/
