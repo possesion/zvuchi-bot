@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+const logger = require('./logger');
+
 const hostname = 'https://zvuchi.s20.online';
 
 let authToken = null;
@@ -15,7 +17,7 @@ async function getAuthToken() {
     }
 
     try {
-        console.log('Попытка получить токен от:', hostname);
+        logger.info('Попытка получить токен от CRM', { hostname });
         const res = await fetch(`${hostname}/v2api/auth/login`, {
             method: 'POST',
             headers: {
@@ -37,13 +39,13 @@ async function getAuthToken() {
         if (data?.token) {
             authToken = data.token;
             tokenExpiry = Date.now() + 3500 * 1000;
-            console.log('Получен новый токен');
+            logger.info('Получен новый токен от CRM');
             return authToken;
         }
 
         throw new Error('Не удалось получить токен: ' + JSON.stringify(data));
     } catch (error) {
-        console.error('Ошибка получения токена:', error.message);
+        logger.error('Ошибка получения токена от CRM', { error, hostname });
         throw error;
     }
 }
@@ -62,7 +64,7 @@ async function apiRequest(url, payload) {
         });
 
         if (response.status === 401) {
-            console.log('Получена 401 ошибка, обновляем токен...');
+            logger.info('Получена 401 ошибка от CRM, обновляем токен');
             authToken = null;
             tokenExpiry = null;
 
@@ -89,7 +91,7 @@ async function apiRequest(url, payload) {
 
         return await response.json();
     } catch (error) {
-        console.error('Ошибка API запроса:', error.message);
+        logger.error('Ошибка API запроса', { error });
         throw error;
     }
 }
@@ -100,7 +102,7 @@ async function getClientData(phone, forceRefresh = false) {
 
     // Проверяем кэш
     if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('Данные клиента из кэша');
+        logger.info('Данные клиента из кэша', { phone });
         return cached.data;
     }
 
@@ -119,7 +121,7 @@ async function getClientData(phone, forceRefresh = false) {
             data: clientData,
             timestamp: Date.now()
         });
-        console.log('Данные клиента обновлены');
+        logger.info('Данные клиента обновлены', { phone });
     }
 
     return clientData;

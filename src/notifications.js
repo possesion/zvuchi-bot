@@ -1,5 +1,6 @@
 'use strict';
 
+const logger = require('./logger');
 const { getPhone, getSubscribedUsers, setSchedule, clearSchedule, getSchedule, getPendingSchedules, markSent } = require('./database');
 const { getClientData } = require('./api');
 
@@ -12,11 +13,12 @@ const { getClientData } = require('./api');
  * @returns {Date}
  */
 function parseLessonDate(dateString) {
-    // "2026-08-25 21:18:01" → "2026-08-25T21:18:01+03:00"
-    const isoString = dateString.replace(' ', 'T').replace(/(\d{2}:\d{2}:\d{2})$/, '$1+03:00')
-        // на случай если секунд нет: "2026-08-25 21:18" → "2026-08-25T21:18+03:00"
-        .replace(/T(\d{2}:\d{2})$/, 'T$1:00+03:00');
-    return new Date(isoString);
+    // "15.07.2025 10:30" -> Date(2025, 6, 15, 10, 30)
+    const [datePart, timePart] = dateString.split(' ');
+    const [day, month, year] = datePart.split('.').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    // месяц в JS: 0-indexed (январь = 0)
+    return new Date(year, month - 1, day, hours, minutes);
 }
 
 /**
@@ -26,8 +28,7 @@ function parseLessonDate(dateString) {
  */
 function extractTime(dateString) {
     const timePart = dateString.split(' ')[1];
-    // Берём только HH:MM, отбрасывая секунды если они есть
-    return timePart.slice(0, 5);
+    return timePart;
 }
 
 /**
@@ -41,7 +42,7 @@ function extractTime(dateString) {
 function formatNotificationMessage({ name, next_lesson_date, paid_count }) {
     const lessonTime = extractTime(next_lesson_date);
     const clientName = name || 'студент';
-    let message = `${clientName}, напоминаем о завтрашнем уроке в ${lessonTime}`;
+    let message = `Привет, ${clientName}, завтра в ${lessonTime} у тебя урок по вокалу.`;
     if (paid_count === 1) {
         message += '\nСледующий урок последний в вашем абонементе. Спасибо, что выбираете студию Звучи!❤️';
     }
@@ -59,7 +60,7 @@ async function getClientDataWithRetry(phone, retries = 1) {
         return await getClientData(phone);
     } catch (error) {
         if (retries > 0) {
-            console.log(`Повтор CRM-запроса для ${phone}...`);
+            logger.info('Повтор CRM-запроса', { phone, retriesLeft: retries });
             await new Promise(resolve => setTimeout(resolve, 1000));
             return await getClientDataWithRetry(phone, retries - 1);
         }
@@ -79,7 +80,7 @@ async function getClientDataWithRetry(phone, retries = 1) {
  */
 function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt) {
     const delay = scheduledAt - Date.now();
-    console.log(`Уведомление будет отправлено пользователю ${username}`);
+    logger.info('Уведомление будет отправлено пользователю', { userId, username, nextLessonDate, scheduledAt });
     if (delay <= 0) return; // просрочено — пропустить
     setTimeout(async () => {
         try {
@@ -90,7 +91,7 @@ function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt
             // Атомарная операция: только один таймер пройдёт
             const wasSent = markSent(userId);
             if (!wasSent) {
-                console.log(`Уведомление для ${userId} уже отправлено другим таймером`);
+                logger.info('Уведомление уже отправлено другим таймером', { userId });
                 return;
             }
             
@@ -99,9 +100,9 @@ function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt
                 next_lesson_date: nextLessonDate,
                 paid_count: record.paid_count ?? null,
             }));
-            console.log(`Уведомление отправлено пользователю ${userId}`);
+            logger.info('Уведомление отправлено пользователю', { userId });
         } catch (e) {
-            console.error(`Ошибка отправки уведомления для ${userId}:`, e.message);
+            logger.error('Ошибка отправки уведомления', { userId, error: e.message, stack: e.stack });
         }
     }, delay);
 }
@@ -114,7 +115,7 @@ function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt
  */
 async function restoreSchedules(bot) {
     const pending = getPendingSchedules();
-    console.log(`Восстановление расписания: ${pending.length} записей`);
+    logger.info('Восстановление расписания', { pendingCount: pending.length });
     for (const row of pending) {
         scheduleNotification(bot, row.user_id, row.name, row.next_lesson_date, row.scheduled_at);
     }
@@ -131,13 +132,13 @@ async function syncSchedule(bot, userIds = null) {
     const users = userIds
         ? userIds.map(id => ({ user_id: id }))
         : getSubscribedUsers();
-    console.log(`Синхронизация расписания: ${users.length} пользователей`);
+    logger.info('Синхронизация расписания', { userCount: users.length });
 
     for (const user of users) {
         try {
             const phone = getPhone(user.user_id);
             if (!phone) {
-                console.log(`Нет номера телефона для пользователя ${user.user_id}, пропускаем`);
+                logger.info('Нет номера телефона для пользователя, пропускаем', { userId: user.user_id });
                 continue;
             }
 
@@ -145,7 +146,7 @@ async function syncSchedule(bot, userIds = null) {
             try {
                 clientData = await getClientDataWithRetry(phone);
             } catch (error) {
-                console.error(`Ошибка CRM для пользователя ${user.user_id}:`, error.message);
+                logger.error('Ошибка CRM для пользователя', { userId: user.user_id, phone, error: error.message, stack: error.stack });
                 continue; // НЕ отправлять сообщение об ошибке пользователю
             }
 
@@ -161,10 +162,10 @@ async function syncSchedule(bot, userIds = null) {
 
             const lessonDate = parseLessonDate(clientData.next_lesson_date);
             const scheduledAt = lessonDate.getTime() - 24 * 60 * 60 * 1000;
-            setSchedule(user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt, clientData.paid_count ?? null);
+            setSchedule(user.user_id, clientData.next_lesson_date, scheduledAt, clientData.name, clientData.paid_count ?? null);
             scheduleNotification(bot, user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt);
         } catch (error) {
-            console.error(`Ошибка при обработке пользователя ${user.user_id}:`, error.message);
+            logger.error('Ошибка при обработке пользователя', { userId: user.user_id, error: error.message, stack: error.stack });
         }
     }
 }

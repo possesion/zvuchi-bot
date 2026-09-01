@@ -1,4 +1,5 @@
 const Database = require('better-sqlite3');
+const logger = require('./logger');
 
 const db = new Database('bot.db');
 
@@ -16,7 +17,7 @@ db.exec(`
 function initializeNotifyColumn() {
     try {
         db.exec('ALTER TABLE users ADD COLUMN notify BOOLEAN DEFAULT 0');
-        console.log('Добавлена колонка notify в таблицу users');
+        logger.info('Добавлена колонка notify в таблицу users');
     } catch (error) {
         if (error.message.includes('duplicate column name')) {
             // Колонка уже существует — всё в порядке
@@ -48,8 +49,15 @@ function initializeScheduleColumns() {
 initializeScheduleColumns();
 
 function savePhone(userId, phone) {
-    const stmt = db.prepare('INSERT INTO users (user_id, phone_number) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET phone_number = excluded.phone_number');
     const formattedPhone = phone.replace(/\D/g, '');
+    // Проверяем есть ли пользователь и совпадает ли номер
+    const existing = db.prepare('SELECT phone_number FROM users WHERE user_id = ?').get(userId);
+    if (existing && existing.phone_number === formattedPhone) {
+        // Номер не изменился — не делаем UPDATE чтобы не сбросить notify
+        return;
+    }
+    // Вставляем нового или обновляем номер
+    const stmt = db.prepare('INSERT INTO users (user_id, phone_number) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET phone_number = excluded.phone_number');
     stmt.run(userId, formattedPhone);
 }
 
@@ -75,7 +83,7 @@ function getSubscribedUsers() {
     return stmt.all();
 }
 
-function setSchedule(userId, name, nextLessonDate, scheduledAt, paidCount) {
+function setSchedule(userId, nextLessonDate, scheduledAt, name, paidCount) {
     const stmt = db.prepare('UPDATE users SET name = ?, next_lesson_date = ?, scheduled_at = ?, sent = 0, paid_count = ? WHERE user_id = ?');
     stmt.run(name || null, nextLessonDate, scheduledAt, paidCount ?? null, userId);
 }

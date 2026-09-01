@@ -2,6 +2,7 @@
 
 const http = require('node:http');
 const https = require('node:https');
+const logger = require('./logger');
 
 // In-memory alert state — сбрасывается только при успешном healthcheck
 let alertSent = false;
@@ -36,7 +37,7 @@ function sendAlert(message) {
     const chatId = process.env.ALERT_CHAT_ID;
 
     if (!token || !chatId) {
-        console.warn('[healthcheck] ALERT_BOT_TOKEN или ALERT_CHAT_ID не заданы — алерт пропущен');
+        logger.warn('[healthcheck] ALERT_BOT_TOKEN или ALERT_CHAT_ID не заданы — алерт пропущен');
         return;
     }
 
@@ -57,11 +58,11 @@ function sendAlert(message) {
 
     const req = https.request(options, (res) => {
         if (res.statusCode !== 200) {
-            console.error(`[healthcheck] Ошибка отправки алерта: HTTP ${res.statusCode}`);
+            logger.error(`[healthcheck] Ошибка отправки алерта: HTTP ${res.statusCode}`);
         }
     });
 
-    req.on('error', (e) => console.error('[healthcheck] Ошибка HTTPS при отправке алерта:', e.message));
+    req.on('error', (e) => logger.error('[healthcheck] Ошибка HTTPS при отправке алерта:', e.message));
     req.write(body);
     req.end();
 }
@@ -80,10 +81,10 @@ async function handleHealthcheck(req, res) {
 
         if (alertSent) {
             alertSent = false;
-            console.log('[healthcheck] Восстановление после сбоя — Alert State сброшен');
+            logger.info('[healthcheck] Восстановление после сбоя — Alert State сброшен');
         }
 
-        console.log('[healthcheck] OK');
+        logger.info('[healthcheck] OK');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok' }));
     } catch (err) {
@@ -94,7 +95,7 @@ async function handleHealthcheck(req, res) {
             alertSent = true;
         }
 
-        console.error(`[healthcheck] ОШИБКА: ${message}`);
+        logger.error(`[healthcheck] ОШИБКА: ${message}`);
         res.writeHead(503, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'error', message }));
     }
@@ -118,7 +119,7 @@ function startHealthcheckServer(port) {
     });
 
     server.listen(listenPort, () => {
-        console.log(`[healthcheck] HTTP-сервер слушает порт ${listenPort}`);
+        logger.info(`[healthcheck] HTTP-сервер слушает порт ${listenPort}`);
     });
 
     return server;

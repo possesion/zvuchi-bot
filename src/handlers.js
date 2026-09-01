@@ -1,3 +1,4 @@
+const logger = require('./logger');
 const { savePhone, getPhone, setNotify } = require('./database');
 const { getClientData } = require('./api');
 const { pluralize } = require('./utils');
@@ -9,7 +10,10 @@ function handleContact(bot) {
         const userId = msg.from.id;
         if (msg.contact.user_id === userId) {
             savePhone(userId, phoneNumber);
-            console.log(`Получен и сохранен номер: ${phoneNumber} для пользователя ${userId}`);
+            logger.info('Получен и сохранен номер телефона', { 
+                user_id: userId, 
+                phone: phoneNumber 
+            });
 
             bot.sendMessage(msg.chat.id, `Спасибо! Ваш номер ${phoneNumber} сохранен`, {
                 reply_markup: {
@@ -42,7 +46,10 @@ function handleText(bot) {
                 });
             }
             setNotify(userId, true);
-            syncSchedule(bot, [userId]).catch(e => console.error('Ошибка syncSchedule при /notify:', e));
+            syncSchedule(bot, [userId]).catch(e => logger.error('Ошибка syncSchedule при /notify', { 
+                error: e, 
+                user_id: userId 
+            }));
             return bot.sendMessage(msg.chat.id, 'Уведомления включены! Вы будете получать напоминания о предстоящих занятиях.');
         }
 
@@ -77,7 +84,11 @@ function handleText(bot) {
                     await bot.sendMessage(msg.chat.id, message);
                 }
             } catch (e) {
-                console.error('CRM Error:', e);
+                logger.error('CRM Error', { 
+                    error: e, 
+                    user_id: userId, 
+                    phone: userPhone 
+                });
                 await bot.sendMessage(msg.chat.id, 'Ошибка при запросе к CRM');
             }
         }
