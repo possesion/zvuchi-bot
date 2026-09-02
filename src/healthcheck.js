@@ -3,6 +3,7 @@
 const http = require('node:http');
 const https = require('node:https');
 const logger = require('./logger');
+const Database = require('better-sqlite3');
 
 // In-memory alert state — сбрасывается только при успешном healthcheck
 let alertSent = false;
@@ -102,6 +103,70 @@ async function handleHealthcheck(req, res) {
 }
 
 /**
+ * Обрабатывает GET /users:
+ * - извлекает всех пользователей из БД
+ * - возвращает отформатированный список с описанием полей
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ */
+function handleUsers(req, res) {
+    try {
+        const db = new Database('bot.db');
+        const stmt = db.prepare('SELECT user_id, phone_number, created_at, notify, next_lesson_date, scheduled_at, sent, name, paid_count FROM users');
+        const rows = stmt.all();
+        db.close();
+
+        const users = rows.map(row => ({
+            user_id: {
+                description: 'Telegram user ID',
+                value: row.user_id
+            },
+            phone_number: {
+                description: 'Номер телефона пользователя',
+                value: row.phone_number
+            },
+            created_at: {
+                description: 'Дата регистрации',
+                value: row.created_at
+            },
+            notify: {
+                description: 'Подписка на уведомления (0 = выкл, 1 = вкл)',
+                value: row.notify
+            },
+            name: {
+                description: 'Имя пользователя из CRM',
+                value: row.name
+            },
+            next_lesson_date: {
+                description: 'Дата следующего занятия',
+                value: row.next_lesson_date
+            },
+            scheduled_at: {
+                description: 'Время запланированного уведомления (Unix timestamp)',
+                value: row.scheduled_at
+            },
+            sent: {
+                description: 'Статус отправки уведомления (0 = не отправлено, 1 = отправлено)',
+                value: row.sent
+            },
+            paid_count: {
+                description: 'Количество оплаченных занятий',
+                value: row.paid_count
+            }
+        }));
+
+        logger.info(`[users] Возвращено пользователей: ${users.length}`);
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ total: users.length, users }, null, 2));
+    } catch (err) {
+        const message = err.message || String(err);
+        logger.error(`[users] ОШИБКА: ${message}`);
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ status: 'error', message }));
+    }
+}
+
+/**
  * Запускает HTTP-сервер для healthcheck.
  * @param {number} [port] - порт для прослушивания (по умолчанию HEALTHCHECK_PORT || 3000)
  * @returns {http.Server}
@@ -112,6 +177,8 @@ function startHealthcheckServer(port) {
     const server = http.createServer((req, res) => {
         if (req.url === '/healthcheck') {
             handleHealthcheck(req, res);
+        } else if (req.url === '/users') {
+            handleUsers(req, res);
         } else {
             res.writeHead(404);
             res.end();
