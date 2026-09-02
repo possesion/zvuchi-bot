@@ -105,7 +105,7 @@ async function handleHealthcheck(req, res) {
 /**
  * Обрабатывает GET /users:
  * - извлекает всех пользователей из БД
- * - возвращает отформатированный список с описанием полей
+ * - возвращает компактный список в формате ключ:значение
  * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
  */
@@ -116,48 +116,9 @@ function handleUsers(req, res) {
         const rows = stmt.all();
         db.close();
 
-        const users = rows.map(row => ({
-            user_id: {
-                description: 'Telegram user ID',
-                value: row.user_id
-            },
-            phone_number: {
-                description: 'Номер телефона пользователя',
-                value: row.phone_number
-            },
-            created_at: {
-                description: 'Дата регистрации',
-                value: row.created_at
-            },
-            notify: {
-                description: 'Подписка на уведомления (0 = выкл, 1 = вкл)',
-                value: row.notify
-            },
-            name: {
-                description: 'Имя пользователя из CRM',
-                value: row.name
-            },
-            next_lesson_date: {
-                description: 'Дата следующего занятия',
-                value: row.next_lesson_date
-            },
-            scheduled_at: {
-                description: 'Время запланированного уведомления (Unix timestamp)',
-                value: row.scheduled_at
-            },
-            sent: {
-                description: 'Статус отправки уведомления (0 = не отправлено, 1 = отправлено)',
-                value: row.sent
-            },
-            paid_count: {
-                description: 'Количество оплаченных занятий',
-                value: row.paid_count
-            }
-        }));
-
-        logger.info(`[users] Возвращено пользователей: ${users.length}`);
+        logger.info(`[users] Возвращено пользователей: ${rows.length}`);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ total: users.length, users }, null, 2));
+        res.end(JSON.stringify({ total: rows.length, users: rows }, null, 2));
     } catch (err) {
         const message = err.message || String(err);
         logger.error(`[users] ОШИБКА: ${message}`);
