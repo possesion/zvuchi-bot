@@ -155,11 +155,11 @@ async function handleSync(req, res, bot) {
 
 /**
  * Запускает HTTP-сервер для healthcheck.
+ * @param {import('node-telegram-bot-api')} bot - экземпляр бота для эндпоинта /sync
  * @param {number} [port] - порт для прослушивания (по умолчанию HEALTHCHECK_PORT || 3000)
- * @param {import('node-telegram-bot-api')} [bot] - экземпляр бота для эндпоинта /sync
  * @returns {http.Server}
  */
-function startHealthcheckServer(port, bot) {
+function startHealthcheckServer(bot, port) {
     const listenPort = port || Number(process.env.HEALTHCHECK_PORT) || 3000;
 
     const server = http.createServer((req, res) => {
