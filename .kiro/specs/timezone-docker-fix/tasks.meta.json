@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "specType": "bugfix",
+  "workflowType": "requirements-first",
+  "created": "2025-01-03T00:00:00.000Z",
+  "pbtTasks": [
+    {
+      "taskId": "1. Write bug condition exploration test",
+      "property": "Property 1: Bug Condition - MSK Date Parsing в UTC окружении",
+      "status": "not_run",
+      "failingExample": null
+    },
+    {
+      "taskId": "2. Write preservation property tests (BEFORE implementing fix)",
+      "property": "Property 2: Preservation - Non-Timezone-Dependent Behavior Preservation",
+      "status": "not_run",
+      "failingExample": null
+    },
+    {
+      "taskId": "3.3 Verify bug condition exploration test now passes",
+      "property": "Property 1: Expected Behavior - MSK Date Parsing Correctness",
+      "status": "not_run",
+      "failingExample": null
+    },
+    {
+      "taskId": "3.4 Verify preservation tests still pass",
+      "property": "Property 2: Preservation - Non-Timezone-Dependent Behavior Unchanged",
+      "status": "not_run",
+      "failingExample": null
+    }
+  ]
+}

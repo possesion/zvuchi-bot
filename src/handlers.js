@@ -89,7 +89,7 @@ function handleText(bot) {
                     user_id: userId, 
                     phone: userPhone 
                 });
-                await bot.sendMessage(msg.chat.id, 'Ошибка при запросе к CRM');
+                await bot.sendMessage(msg.chat.id, 'Ошибка при запросе к CRM. Попробуйте еще раз');
             }
         }
     };

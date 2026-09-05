@@ -7,18 +7,26 @@ const { getClientData } = require('./api');
 /**
  * Парсит строку даты занятия из CRM.
  * CRM возвращает время в московской зоне (UTC+3).
- * Парсим через ISO-строку с явным смещением +03:00 чтобы не зависеть
- * от часового пояса сервера.
- * @param {string} dateString - формат "YYYY-MM-DD HH:MM:SS"
- * @returns {Date}
+ * Конвертируем MSK → UTC математически: создаём UTC timestamp и вычитаем 3 часа.
+ * Это обеспечивает корректную работу независимо от часового пояса сервера (Docker UTC).
+ * @param {string} dateString - формат "YYYY-MM-DD HH:MM:SS" (московское время)
+ * @returns {Date} - Date объект в UTC с корректным смещением от MSK
  */
 function parseLessonDate(dateString) {
-    // "2026-09-05 12:30:01" -> Date(2026, 8, 5, 12, 30)
+    // "2026-09-05 12:30:01" -> Date(2026-09-05T09:30:00.000Z) в UTC
     const [datePart, timePart] = dateString.split(' ');
     const [year, month, day] = datePart.split('-').map(Number);
     const [hours, minutes] = timePart.split(':').map(Number);
-    // месяц в JS: 0-indexed (январь = 0)
-    return new Date(year, month - 1, day, hours, minutes);
+    
+    // Создаём UTC timestamp, интерпретируя компоненты как MSK
+    const utcTimestamp = Date.UTC(year, month - 1, day, hours, minutes);
+    
+    // Вычитаем 3 часа (MSK offset), так как MSK = UTC+3
+    const mskOffset = 3 * 60 * 60 * 1000; // 10800000 ms
+    const correctedTimestamp = utcTimestamp - mskOffset;
+    
+    // Возвращаем Date объект с корректным UTC timestamp
+    return new Date(correctedTimestamp);
 }
 
 /**

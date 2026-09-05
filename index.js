@@ -20,11 +20,10 @@ bot.on('contact', handleContact(bot));
 bot.on('text', handleText(bot));
 
 // Запускаем синхронизацию расписания каждый день в 00:00 по московскому времени
-cron.schedule('0 0 * * *', () => {
+// Выполняется в 21:00 UTC, что соответствует 00:00 MSK следующего дня (UTC+3)
+cron.schedule('0 21 * * *', () => {
     logger.info('Запуск ежедневной синхронизации расписания');
     syncSchedule(bot).catch((e) => logger.error('Ошибка syncSchedule', { error: e }));
-}, {
-    timezone: 'Europe/Moscow'
 });
 
 logger.info('Бот запущен');
