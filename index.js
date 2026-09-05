@@ -29,5 +29,5 @@ cron.schedule('0 0 * * *', () => {
 
 logger.info('Бот запущен');
 
-startHealthcheckServer();
+startHealthcheckServer(bot);
 logger.info('Healthcheck сервер запущен');

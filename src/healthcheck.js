@@ -128,11 +128,38 @@ function handleUsers(req, res) {
 }
 
 /**
+ * Обрабатывает GET /sync:
+ * - запускает синхронизацию расписания для всех подписчиков
+ * - возвращает результат синхронизации
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ * @param {import('node-telegram-bot-api')} bot
+ */
+async function handleSync(req, res, bot) {
+    try {
+        const { syncSchedule } = require('./notifications');
+        logger.info('[sync] Запуск синхронизации расписания');
+        
+        await syncSchedule(bot);
+        
+        logger.info('[sync] Синхронизация завершена');
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ status: 'ok', message: 'Синхронизация расписания завершена' }));
+    } catch (err) {
+        const message = err.message || String(err);
+        logger.error(`[sync] ОШИБКА: ${message}`, { stack: err.stack });
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ status: 'error', message }));
+    }
+}
+
+/**
  * Запускает HTTP-сервер для healthcheck.
  * @param {number} [port] - порт для прослушивания (по умолчанию HEALTHCHECK_PORT || 3000)
+ * @param {import('node-telegram-bot-api')} [bot] - экземпляр бота для эндпоинта /sync
  * @returns {http.Server}
  */
-function startHealthcheckServer(port) {
+function startHealthcheckServer(port, bot) {
     const listenPort = port || Number(process.env.HEALTHCHECK_PORT) || 3000;
 
     const server = http.createServer((req, res) => {
@@ -140,6 +167,13 @@ function startHealthcheckServer(port) {
             handleHealthcheck(req, res);
         } else if (req.url === '/users') {
             handleUsers(req, res);
+        } else if (req.url === '/sync') {
+            if (!bot) {
+                res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.end(JSON.stringify({ status: 'error', message: 'Bot instance not available' }));
+                return;
+            }
+            handleSync(req, res, bot);
         } else {
             res.writeHead(404);
             res.end();
