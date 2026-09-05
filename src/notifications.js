@@ -13,9 +13,9 @@ const { getClientData } = require('./api');
  * @returns {Date}
  */
 function parseLessonDate(dateString) {
-    // "15.07.2025 10:30" -> Date(2025, 6, 15, 10, 30)
+    // "2026-09-05 12:30:01" -> Date(2026, 8, 5, 12, 30)
     const [datePart, timePart] = dateString.split(' ');
-    const [day, month, year] = datePart.split('.').map(Number);
+    const [year, month, day] = datePart.split('-').map(Number);
     const [hours, minutes] = timePart.split(':').map(Number);
     // месяц в JS: 0-indexed (январь = 0)
     return new Date(year, month - 1, day, hours, minutes);
@@ -44,7 +44,7 @@ function formatNotificationMessage({ name, next_lesson_date, paid_count }) {
     const clientName = name || 'студент';
     let message = `Привет, ${clientName}, завтра в ${lessonTime} у тебя урок по вокалу.`;
     if (paid_count === 1) {
-        message += '\nСледующий урок последний в вашем абонементе. Спасибо, что выбираете студию Звучи!❤️';
+        message += '\nСледующий урок последний в твоём абонементе. Спасибо, что выбираешь студию Звучи!❤️';
     }
     return message;
 }

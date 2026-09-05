@@ -1,0 +1,124 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration test": {
+      "status": "passed",
+      "failingExample": "**Counterexamples Found (Bug Confirmed)**:\n\n1. **Production examples** - All returned NaN timestamps:\n   - \"2026-09-05 12:30:01\" → Invalid Date (NaN)\n   - \"2026-09-07 18:30:01\" → Invalid Date (NaN)\n   - \"2026-09-09 17:30:01\" → Invalid Date (NaN)\n\n2. **Edge cases** - All returned NaN timestamps:\n   - \"2026-01-01 00:00:00\" (midnight) → Invalid Date (NaN)\n   - \"2026-12-31 23:59:59\" (year boundary) → Invalid Date (NaN)\n   - \"2026-12-15 18:45:30\" (different month) → Invalid Date (NaN)\n\n3. **Property-based test** - Shrunk counterexample:\n   - Input: [year=2025, month=1, day=1, hour=0, minute=0, second=0]\n   - Formatted: \"2025-01-01 00:00:00\"\n   - Result: parseLessonDate() returned NaN timestamp\n   - Expected: Valid timestamp\n\n**Root Cause Confirmed**:\nThe current implementation splits by '.' expecting \"DD.MM.YYYY HH:MM\" format, but CRM returns \"YYYY-MM-DD HH:MM:SS\" with dash separators. The split fails, producing incorrect array destructuring → undefined values → Invalid Date → NaN timestamp → notifications never scheduled.\n\n**Test Status**: FAILED on unfixed code (expected behavior - bug confirmed)",
+      "lastRunTimestamp": 1788594217750
+    },
+    "3.2 Verify bug condition exploration test now passes": {
+      "status": "passed",
+      "lastRunTimestamp": 1788594761885
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788593769861
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788593783968
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594250110
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788593769887
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594258505
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594451929
+      }
+    ],
+    "3.1 Implement the fix in src/notifications.js": [
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788593769905
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594460870
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594724236
+      }
+    ],
+    "3.2 Verify bug condition exploration test now passes": [
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788593769928
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594732235
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594780387
+      }
+    ],
+    "3.3 Verify preservation tests still pass": [
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788593769950
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594789339
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594859349
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788593769972
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594866532
+      },
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594922877
+      }
+    ],
+    "3. Fix parseLessonDate() to handle ISO format dates": [
+      {
+        "executionId": "5660b8ec-1cac-40af-ac20-5abb36e78ea5",
+        "chatSessionId": "sess_08f14804-a112-48b9-9f51-34aae18a19ac",
+        "timestamp": 1788594859374
+      }
+    ]
+  }
+}
