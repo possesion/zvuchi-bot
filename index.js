@@ -19,10 +19,16 @@ bot.on('polling_error', (e) => logger.error('Ошибка поллинга', { e
 bot.on('contact', handleContact(bot));
 bot.on('text', handleText(bot));
 
-// Запускаем синхронизацию расписания каждый день в 00:00 по московскому времени
-// Выполняется в 21:00 UTC, что соответствует 00:00 MSK следующего дня (UTC+3)
+// Запускаем синхронизацию расписания каждый день в 00:00 и 13:00 по московскому времени
+// 00:00 MSK = 21:00 UTC (предыдущего дня)
 cron.schedule('0 21 * * *', () => {
-    logger.info('Запуск ежедневной синхронизации расписания');
+    logger.info('Запуск ежедневной синхронизации расписания в 00:00 MSK');
+    syncSchedule(bot).catch((e) => logger.error('Ошибка syncSchedule', { error: e }));
+});
+
+// 13:00 MSK = 10:00 UTC
+cron.schedule('0 10 * * *', () => {
+    logger.info('Запуск ежедневной синхронизации расписания в 13:00 MSK');
     syncSchedule(bot).catch((e) => logger.error('Ошибка syncSchedule', { error: e }));
 });
 
