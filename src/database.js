@@ -99,9 +99,9 @@ function getSchedule(userId) {
     return row || null;
 }
 
-function getPendingSchedules() {
-    const stmt = db.prepare('SELECT user_id, name, next_lesson_date, scheduled_at, paid_count FROM users WHERE scheduled_at IS NOT NULL AND sent = 0 AND notify = 1');
-    return stmt.all();
+function getDueSchedules(now) {
+    const stmt = db.prepare('SELECT user_id, name, next_lesson_date, scheduled_at, sent, paid_count FROM users WHERE scheduled_at IS NOT NULL AND scheduled_at <= ? AND sent = 0 AND notify = 1');
+    return stmt.all(now);
 }
 
 function markSent(userId) {
@@ -120,6 +120,6 @@ module.exports = {
     setSchedule,
     clearSchedule,
     getSchedule,
-    getPendingSchedules,
+    getDueSchedules,
     markSent,
 };

@@ -1,7 +1,7 @@
 'use strict';
 
 const logger = require('./logger');
-const { getPhone, getSubscribedUsers, setSchedule, clearSchedule, getSchedule, getPendingSchedules, markSent } = require('./database');
+const { getPhone, getSubscribedUsers, setSchedule, clearSchedule, getSchedule, getDueSchedules, markSent } = require('./database');
 const { getClientData } = require('./api');
 
 /**
@@ -77,70 +77,66 @@ async function getClientDataWithRetry(phone, retries = 1) {
 }
 
 /**
- * Ставит setTimeout на точный момент отправки уведомления.
- * Просроченные записи (delay <= 0) пропускаются автоматически.
- * Защита от двойной отправки: использует атомарный markSent() — только первый таймер пройдёт.
+ * Проверяет БД на «созревшие» уведомления и отправляет их.
+ * Вызывается cron'ом каждые 5 минут. CRM не запрашивается — работает поверх
+ * данных, которые кладёт ежедневный syncSchedule.
+ *
+ * Логика по каждой due-записи (scheduled_at <= now, sent = 0, notify = 1):
+ *   - если урок уже прошёл (now >= lessonDate) — помечаем sent без отправки;
+ *   - иначе (в окне < 24ч до урока) — атомарно markSent и отправляем уведомление.
+ * Защита от двойной отправки: атомарный markSent() — только один вызов пройдёт.
  * @param {import('node-telegram-bot-api')} bot
- * @param {number} userId
- * @param {string} username
- * @param {string} nextLessonDate
- * @param {number} scheduledAt - Unix timestamp в мс
  */
-function scheduleNotification(bot, userId, username, nextLessonDate, scheduledAt) {
-    const delay = scheduledAt - Date.now();
-    const delayHours = (delay / 1000 / 60 / 60).toFixed(1);
-    const scheduledDate = new Date(scheduledAt).toISOString();
-    logger.info('Уведомление будет отправлено пользователю', { 
-        userId, 
-        username, 
-        nextLessonDate, 
-        scheduledAt,
-        scheduledDate,
-        delayHours: `${delayHours} часов`
-    });
-    if (delay <= 0) return; // просрочено — пропустить
-    setTimeout(async () => {
-        try {
-            const record = getSchedule(userId);
-            // Защита: дата могла измениться или уже отправлено
-            if (!record || record.scheduled_at !== scheduledAt || record.sent) return;
-            
-            // Атомарная операция: только один таймер пройдёт
-            const wasSent = markSent(userId);
-            if (!wasSent) {
-                logger.info('Уведомление уже отправлено другим таймером', { userId });
-                return;
-            }
-            
-            await bot.sendMessage(userId, formatNotificationMessage({
-                name: username,
-                next_lesson_date: nextLessonDate,
-                paid_count: record.paid_count ?? null,
-            }));
-            logger.info('Уведомление отправлено пользователю', { userId });
-        } catch (e) {
-            logger.error('Ошибка отправки уведомления', { userId, error: e.message, stack: e.stack });
-        }
-    }, delay);
-}
+async function processDueNotifications(bot) {
+    const now = Date.now();
+    const due = getDueSchedules(now);
+    logger.info('Проверка due-уведомлений', { dueCount: due.length });
 
-/**
- * Восстанавливает таймеры уведомлений при старте бота.
- * Читает все несработавшие записи из БД и вызывает scheduleNotification.
- * Просроченные записи автоматически пропускаются внутри scheduleNotification.
- * @param {import('node-telegram-bot-api')} bot
- */
-async function restoreSchedules(bot) {
-    const pending = getPendingSchedules();
-    logger.info('Восстановление расписания', { pendingCount: pending.length });
-    for (const row of pending) {
-        scheduleNotification(bot, row.user_id, row.name, row.next_lesson_date, row.scheduled_at);
+    for (const row of due) {
+        const { user_id: userId, name } = row;
+
+        try {
+            const lessonDate = parseLessonDate(row.next_lesson_date);
+
+            // Урок уже прошёл — не отправляем, но помечаем, чтобы не обрабатывать повторно
+            if (now >= lessonDate.getTime()) {
+                const isMarked = markSent(userId);
+                if (isMarked) {
+                    logger.info('Урок уже прошёл, уведомление не отправляется', {
+                        name,
+                        nextLessonDate: row.next_lesson_date,
+                    });
+                }
+                continue;
+            }
+
+            // Атомарная операция: только один проход пройдёт
+            const isSent = markSent(userId);
+            if (!isSent) {
+                logger.info('Уведомление уже отправлено', { name });
+                continue;
+            }
+
+            try {
+                await bot.sendMessage(userId, formatNotificationMessage({
+                    name: row.name,
+                    next_lesson_date: row.next_lesson_date,
+                    paid_count: row.paid_count ?? null,
+                }));
+                logger.info('Уведомление отправлено пользователю', { name });
+            } catch (e) {
+                logger.error('Ошибка отправки уведомления', { userId, name, error: e.message, stack: e.stack });
+            }
+        } catch (e) {
+            logger.error('Ошибка обработки due-уведомления', { userId, name, error: e.message, stack: e.stack });
+        }
     }
 }
 
 /**
- * Синхронизирует расписание из CRM в БД и ставит таймеры уведомлений.
+ * Синхронизирует расписание из CRM в БД.
  * Вызывается ежедневно cron'ом или при подписке пользователя (/notify).
+ * Отправку уведомлений выполняет отдельный cron через processDueNotifications.
  * При ошибке CRM — только console.error, без сообщений пользователю.
  * @param {import('node-telegram-bot-api')} bot
  * @param {number[]|null} userIds - список user_id или null для всех подписчиков
@@ -180,7 +176,6 @@ async function syncSchedule(bot, userIds = null) {
             const lessonDate = parseLessonDate(clientData.next_lesson_date);
             const scheduledAt = lessonDate.getTime() - 24 * 60 * 60 * 1000;
             setSchedule(user.user_id, clientData.next_lesson_date, scheduledAt, clientData.name, clientData.paid_count ?? null);
-            scheduleNotification(bot, user.user_id, clientData.name, clientData.next_lesson_date, scheduledAt);
         } catch (error) {
             logger.error('Ошибка при обработке пользователя', { userId: user.user_id, error: error.message, stack: error.stack });
         }
@@ -189,8 +184,7 @@ async function syncSchedule(bot, userIds = null) {
 
 module.exports = {
     syncSchedule,
-    restoreSchedules,
-    scheduleNotification,
+    processDueNotifications,
     parseLessonDate,
     extractTime,
     formatNotificationMessage,

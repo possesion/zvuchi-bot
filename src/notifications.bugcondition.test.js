@@ -6,8 +6,9 @@
  *
  * ПОСЛЕ ИСПРАВЛЕНИЯ:
  *   Test 1 (Сценарий A): shouldSendNotification удалена. Проверяем, что syncSchedule
- *     корректно вычисляет scheduled_at = lessonDate - 24h и вызывает scheduleNotification
- *     с правильными параметрами независимо от дня недели (исправление бага A).
+ *     корректно вычисляет scheduled_at = lessonDate - 24h и сохраняет его через setSchedule
+ *     независимо от дня недели (исправление бага A). Отправку теперь выполняет
+ *     processDueNotifications по cron'у, а не setTimeout.
  *   Test 2 (персистентность): колонки scheduled_at / sent / next_lesson_date СУЩЕСТВУЮТ.
  *   Test 3 (CRM-ошибка): syncSchedule при rejection getClientData НЕ вызывает bot.sendMessage.
  */
@@ -40,7 +41,7 @@ jest.mock('./database', () => ({
     setSchedule:        jest.fn(),
     clearSchedule:      jest.fn(),
     getSchedule:        jest.fn(() => mockSchedule),
-    getPendingSchedules: jest.fn(() => []),
+    getDueSchedules:    jest.fn(() => []),
     markSent:           jest.fn(),
 }));
 
@@ -62,7 +63,7 @@ describe('Test 1 (Сценарий A): syncSchedule вычисляет scheduled
      * cron запустился в воскресенье в 00:00).
      *
      * Исправление: syncSchedule вычисляет scheduled_at = lessonDate.getTime() - 24h
-     * и вызывает scheduleNotification с этим значением — без завязки на «завтра».
+     * и сохраняет его через setSchedule — без завязки на «завтра».
      *
      * Проверяем через мок: после syncSchedule с конкретной next_lesson_date
      * setSchedule вызван с scheduledAt === parseLessonDate(next_lesson_date) - 24h.
