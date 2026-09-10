@@ -1,12 +1,8 @@
 'use strict';
 
 const http = require('node:http');
-const https = require('node:https');
 const logger = require('./logger');
 const Database = require('better-sqlite3');
-
-// In-memory alert state — сбрасывается только при успешном healthcheck
-let alertSent = false;
 
 /**
  * Проверяет доступность Telegram API через метод getMe.
@@ -29,50 +25,10 @@ async function checkTelegramApi() {
 }
 
 /**
- * Отправляет алерт в Telegram через Alert Bot.
- * Использует node:https напрямую, без npm-пакетов.
- * @param {string} message - описание ошибки
- */
-function sendAlert(message) {
-    const token = process.env.ALERT_BOT_TOKEN;
-    const chatId = process.env.ALERT_CHAT_ID;
-
-    if (!token || !chatId) {
-        logger.warn('[healthcheck] ALERT_BOT_TOKEN или ALERT_CHAT_ID не заданы — алерт пропущен');
-        return;
-    }
-
-    const body = JSON.stringify({
-        chat_id: chatId,
-        text: `[Zvuchi Bot] Сбой при healthcheck: ${message}`
-    });
-
-    const options = {
-        hostname: 'api.telegram.org',
-        path: `/bot${token}/sendMessage`,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(body)
-        }
-    };
-
-    const req = https.request(options, (res) => {
-        if (res.statusCode !== 200) {
-            logger.error(`[healthcheck] Ошибка отправки алерта: HTTP ${res.statusCode}`);
-        }
-    });
-
-    req.on('error', (e) => logger.error('[healthcheck] Ошибка HTTPS при отправке алерта:', e.message));
-    req.write(body);
-    req.end();
-}
-
-/**
  * Обрабатывает GET /healthcheck:
  * - вызывает checkTelegramApi()
- * - при успехе сбрасывает alertSent, отвечает 200
- * - при сбое отправляет однократный алерт, отвечает 503
+ * - при успехе отвечает 200
+ * - при сбое отвечает 503
  * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
  */
@@ -80,21 +36,11 @@ async function handleHealthcheck(req, res) {
     try {
         await checkTelegramApi();
 
-        if (alertSent) {
-            alertSent = false;
-            logger.info('[healthcheck] Восстановление после сбоя — Alert State сброшен');
-        }
-
         logger.info('[healthcheck] OK');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok' }));
     } catch (err) {
         const message = err.message || String(err);
-
-        if (!alertSent) {
-            sendAlert(message);
-            alertSent = true;
-        }
 
         logger.error(`[healthcheck] ОШИБКА: ${message}`);
         res.writeHead(503, { 'Content-Type': 'application/json' });

@@ -36,7 +36,11 @@ function parseLessonDate(dateString) {
  */
 function extractTime(dateString) {
     const timePart = dateString.split(' ')[1];
-    return timePart;
+    // Берём только часы и минуты, отбрасывая секунды.
+    // CRM может вернуть время с ненулевыми секундами (напр. "18:00:01"),
+    // которые не должны попадать в текст уведомления.
+    const [hours, minutes] = timePart.split(':');
+    return `${hours}:${minutes}`;
 }
 
 /**
@@ -52,7 +56,7 @@ function formatNotificationMessage({ name, next_lesson_date, paid_count }) {
     const clientName = name || 'студент';
     let message = `Привет, ${clientName}, завтра в ${lessonTime} у тебя урок по вокалу.`;
     if (paid_count === 1) {
-        message += '\nСледующий урок последний в твоём абонементе. Спасибо, что выбираешь студию Звучи!❤️';
+        message += '\n\nСледующий урок последний в твоём абонементе. Спасибо, что выбираешь студию Звучи!❤️';
     }
     return message;
 }
@@ -90,7 +94,7 @@ async function getClientDataWithRetry(phone, retries = 1) {
 async function processDueNotifications(bot) {
     const now = Date.now();
     const due = getDueSchedules(now);
-    logger.info('Проверка due-уведомлений', { dueCount: due.length });
+    logger.info('Проверка готовых к отправке уведомлений', { dueCount: due.length });
 
     for (const row of due) {
         const { user_id: userId, name } = row;

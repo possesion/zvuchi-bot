@@ -1,0 +1,120 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration test": {
+      "status": "passed",
+      "failingExample": "The exploration test FAILED on unfixed code as expected, confirming the self-referential alert bug. Counterexamples:\n\n1) Test 1 (single failure, all 4 cases DNS/timeout/AggregateError/502): on healthcheck failure the handler attempts an outbound alert request. Captured https.request call: { hostname: 'api.telegram.org', method: 'POST', path: '/botalert-bot-token/sendMessage' }. Expected 0 alert requests, received 1.\n\n2) Property 1 (fast-check, seed 42): failed after 1 run, counterexample rawMessage = \"!\" — every failure message triggers exactly 1 outbound alert request to api.telegram.org.\n\n3) Test 2 (two consecutive failures): first failure attempts 1 alert request (alertSent mutated to true); expected 0 total. Confirms behavior coupled to hidden alertSent state.\n\n4) Test 3 (failure then success): success path emits reset log line \"[healthcheck] Восстановление после сбоя — Alert State сброшен\"; expected none. Confirms dead reset-on-recovery logic.\n\nAll 7 tests failed in 0.26s with no open handles. Proves isBugCondition: checkTelegramApi() throws AND (alertDeliveryAttempted OR alertSentStateMutated).",
+      "lastRunTimestamp": 1789066758944
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066376003
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066384427
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066779080
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066376028
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066783228
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067070338
+      }
+    ],
+    "3.1 Implement the fix": [
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066376051
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067075680
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067145165
+      }
+    ],
+    "3.2 Verify bug condition exploration test now passes": [
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066376067
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067149112
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067216665
+      }
+    ],
+    "3.3 Verify preservation tests still pass": [
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066376088
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067220468
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067258619
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789066376118
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067262399
+      },
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067425294
+      }
+    ],
+    "3. Fix for self-referential healthcheck alert (remove sendAlert and alertSent)": [
+      {
+        "executionId": "26cfc9f4-a885-4927-827f-6c4228d3ffa8",
+        "chatSessionId": "sess_5ec43c10-c2d8-442c-99e2-d5f914dc1551",
+        "timestamp": 1789067258648
+      }
+    ]
+  }
+}

@@ -10,9 +10,9 @@ function handleContact(bot) {
         const userId = msg.from.id;
         if (msg.contact.user_id === userId) {
             savePhone(userId, phoneNumber);
-            logger.info('Получен и сохранен номер телефона', { 
-                user_id: userId, 
-                phone: phoneNumber 
+            logger.info('Получен и сохранен номер телефона', {
+                user_id: userId,
+                phone: phoneNumber
             });
 
             bot.sendMessage(msg.chat.id, `Спасибо! Ваш номер ${phoneNumber} сохранен`, {
@@ -29,7 +29,7 @@ function handleText(bot) {
         const userId = msg.from.id;
         const text = msg.text;
 
-        const userPhone = getPhone(userId); 
+        const userPhone = getPhone(userId);
 
         if (text === '/start') {
             return bot.sendMessage(msg.chat.id, 'Вы запустили бота!');
@@ -46,15 +46,17 @@ function handleText(bot) {
                 });
             }
             setNotify(userId, true);
-            syncSchedule(bot, [userId]).catch(e => logger.error('Ошибка syncSchedule при /notify', { 
-                error: e, 
-                user_id: userId 
+            logger.info('Уведомления включены для ', userId);
+            syncSchedule(bot, [userId]).catch(e => logger.error('Ошибка syncSchedule при /notify', {
+                error: e,
+                user_id: userId
             }));
             return bot.sendMessage(msg.chat.id, 'Уведомления включены! Вы будете получать напоминания о предстоящих занятиях.');
         }
 
         if (text === '/unsubscribe') {
             setNotify(userId, false);
+            logger.info('Уведомления отключены для ', userId);
             return bot.sendMessage(msg.chat.id, 'Уведомления отключены.');
         }
 
@@ -77,17 +79,25 @@ function handleText(bot) {
                 if (text === '/lessonstotal') {
                     const lessonsText = pluralize(client.paid_count, 'урок', 'урока', 'уроков');
                     await bot.sendMessage(msg.chat.id, `У вас осталось ${client.paid_count} ${lessonsText}`);
+                    logger.info('Отправлены данные об оставшихся уроках', {
+                        name: client.name,
+                        paidCount: client.paid_count,
+                    });
                 } else {
+                    logger.info('Отправлены данные о следующем уроке', {
+                        name: client.name,
+                        nextLesson: client.next_lesson_date,
+                    });
                     const message = client.next_lesson_date
                         ? `Дата следующего урока – ${client.next_lesson_date}`
                         : 'Урок не запланирован';
                     await bot.sendMessage(msg.chat.id, message);
                 }
             } catch (e) {
-                logger.error('CRM Error', { 
-                    error: e, 
-                    user_id: userId, 
-                    phone: userPhone 
+                logger.error('CRM Error', {
+                    error: e,
+                    user_id: userId,
+                    phone: userPhone
                 });
                 await bot.sendMessage(msg.chat.id, 'Ошибка при запросе к CRM. Попробуйте еще раз');
             }
