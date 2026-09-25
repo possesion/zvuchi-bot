@@ -30,7 +30,7 @@ This design implements centralized structured logging for the Zvuchi Telegram Bo
 │                                       ▼                      │
 │                              ┌────────────────┐             │
 │  User ───────────────────────▶    Grafana     │             │
-│  176.124.198.245:3001        │ (Visualization)│             │
+│  94.228.169.249:3001        │ (Visualization)│             │
 │                              └────────────────┘             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -207,7 +207,7 @@ services:
   grafana:
     image: grafana/grafana:10.2.3
     ports:
-      - "176.124.198.245:3001:3000"
+      - "94.228.169.249:3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
@@ -484,7 +484,7 @@ logger.error('Ошибка', { error });
    ```
 
 4. **Access Grafana:**
-   - Navigate to: http://176.124.198.245:3001
+   - Navigate to: http://94.228.169.249:3001
    - Login with credentials from .env
    - Go to Explore → Select Loki
    - Query: `{compose_service="zvuchi-bot"}`
@@ -676,7 +676,7 @@ This prevents accidental deployment with default credentials.
 
 ### Network Exposure
 
-1. **Grafana:** Bound to specific IP (176.124.198.245:3001)
+1. **Grafana:** Bound to specific IP (94.228.169.249:3001)
 2. **Loki:** Not exposed to host (internal only)
 3. **Promtail:** Not exposed to host (internal only)
 
@@ -901,7 +901,7 @@ Grafana can be configured with alerts for:
 - [ ] Replace console.log in all files
 - [ ] Build and deploy: `docker-compose up -d`
 - [ ] Verify all services started: `docker-compose ps`
-- [ ] Verify Grafana access: http://176.124.198.245:3001
+- [ ] Verify Grafana access: http://94.228.169.249:3001
 - [ ] Verify Loki datasource configured (check for provisioning errors in logs)
 - [ ] Test log queries in Grafana Explore
 - [ ] Document credentials securely (password manager or secure vault)

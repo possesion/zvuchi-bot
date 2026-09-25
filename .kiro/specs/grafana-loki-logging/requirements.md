@@ -55,8 +55,8 @@ This document defines requirements for integrating a centralized logging stack (
 
 #### Acceptance Criteria
 
-1. THE Grafana service SHALL bind to host IP address 176.124.198.245 on port 3001
-2. WHEN a user navigates to http://176.124.198.245:3001, THE Grafana service SHALL serve the login page
+1. THE Grafana service SHALL bind to host IP address 94.228.169.249 on port 3001
+2. WHEN a user navigates to http://94.228.169.249:3001, THE Grafana service SHALL serve the login page
 3. WHEN a user submits valid credentials, THE Grafana service SHALL grant access to the dashboard interface
 4. IF valid credentials are submitted AND internal errors prevent access, THEN THE Grafana service SHALL display a generic error message
 
