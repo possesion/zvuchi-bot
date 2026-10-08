@@ -7,20 +7,13 @@ const Database = require('better-sqlite3');
 /**
  * Проверяет доступность Telegram API через метод getMe.
  * Бросает ошибку при любом сбое: сетевом, таймауте, non-ok статусе или ok=false в теле.
+ * @param {import('node-telegram-bot-api').Bot} bot
  */
-async function checkTelegramApi() {
-    const token = process.env.API_KEY_BOT;
-    const url = `https://api.telegram.org/bot${token}/getMe`;
-
-    const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
-
-    if (!res.ok) {
-        throw new Error(`Telegram getMe вернул HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    if (!data.ok) {
-        throw new Error(`Telegram getMe: ok=false, ${JSON.stringify(data)}`);
+async function checkTelegramApi(bot) {
+    // В v2 используем bot.api.getMe() вместо прямого fetch
+    const me = await bot.api.getMe();
+    if (!me || !me.username) {
+        throw new Error('Telegram getMe вернул невалидные данные');
     }
 }
 
@@ -31,10 +24,11 @@ async function checkTelegramApi() {
  * - при сбое отвечает 503
  * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
+ * @param {import('node-telegram-bot-api').Bot} bot
  */
-async function handleHealthcheck(req, res) {
+async function handleHealthcheck(req, res, bot) {
     try {
-        await checkTelegramApi();
+        await checkTelegramApi(bot);
 
         logger.info('[healthcheck] OK');
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -79,7 +73,7 @@ function handleUsers(req, res) {
  * - возвращает результат синхронизации
  * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
- * @param {import('node-telegram-bot-api')} bot
+ * @param {import('node-telegram-bot-api').Bot} bot
  */
 async function handleSync(req, res, bot) {
     try {
@@ -101,7 +95,7 @@ async function handleSync(req, res, bot) {
 
 /**
  * Запускает HTTP-сервер для healthcheck.
- * @param {import('node-telegram-bot-api')} bot - экземпляр бота для эндпоинта /sync
+ * @param {import('node-telegram-bot-api').Bot} bot - экземпляр бота для эндпоинта /sync
  * @param {number} [port] - порт для прослушивания (по умолчанию HEALTHCHECK_PORT || 3000)
  * @returns {http.Server}
  */
@@ -110,7 +104,7 @@ function startHealthcheckServer(bot, port) {
 
     const server = http.createServer((req, res) => {
         if (req.url === '/healthcheck') {
-            handleHealthcheck(req, res);
+            handleHealthcheck(req, res, bot);
         } else if (req.url === '/users') {
             handleUsers(req, res);
         } else if (req.url === '/sync') {

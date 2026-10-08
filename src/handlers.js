@@ -5,39 +5,59 @@ const { pluralize } = require('./utils');
 const { syncSchedule } = require('./notifications');
 
 function handleContact(bot) {
-    return (msg) => {
-        const phoneNumber = msg.contact.phone_number;
-        const userId = msg.from.id;
-        if (msg.contact.user_id === userId) {
+    return async (ctx) => {
+        // В v2 структура немного другая, но поля остаются теми же
+        const contact = ctx.message?.contact;
+        if (!contact) return;
+
+        const phoneNumber = contact.phone_number;
+        const userId = ctx.from?.id;
+        
+        if (!userId) return;
+
+        if (contact.user_id === userId) {
             savePhone(userId, phoneNumber);
             logger.info('Получен и сохранен номер телефона', {
                 user_id: userId,
                 phone: phoneNumber
             });
 
-            bot.sendMessage(msg.chat.id, `Спасибо! Ваш номер ${phoneNumber} сохранен`, {
+            await bot.api.sendMessage({
+                chat_id: ctx.chat.id,
+                text: `Спасибо! Ваш номер ${phoneNumber} сохранен`,
                 reply_markup: {
                     remove_keyboard: true
                 }
             });
-        };
+        }
     }
 }
 
 function handleText(bot) {
-    return async (msg) => {
-        const userId = msg.from.id;
-        const text = msg.text;
+    return async (ctx) => {
+        // В v2: ctx.message содержит само сообщение
+        const message = ctx.message;
+        if (!message || !message.text) return; // Пропускаем не-текстовые сообщения
+
+        const userId = ctx.from?.id;
+        const text = message.text;
+        
+        if (!userId) return;
 
         const userPhone = getPhone(userId);
 
         if (text === '/start') {
-            return bot.sendMessage(msg.chat.id, 'Вы запустили бота!');
+            return bot.api.sendMessage({
+                chat_id: ctx.chat.id,
+                text: 'Вы запустили бота!'
+            });
         }
 
         if (text === '/notify') {
             if (!userPhone) {
-                return bot.sendMessage(msg.chat.id, 'Сначала поделитесь номером телефона, чтобы подключить уведомления', {
+                return bot.api.sendMessage({
+                    chat_id: ctx.chat.id,
+                    text: 'Поделитесь номером телефона, чтобы подключить уведомления',
                     reply_markup: {
                         keyboard: [[{ text: '📱 Отправить номер телефона', request_contact: true }]],
                         resize_keyboard: true,
@@ -51,17 +71,25 @@ function handleText(bot) {
                 error: e,
                 user_id: userId
             }));
-            return bot.sendMessage(msg.chat.id, 'Уведомления включены! Вы будете получать напоминания о предстоящих занятиях.');
+            return bot.api.sendMessage({
+                chat_id: ctx.chat.id,
+                text: 'Уведомления включены! Вы будете получать напоминания о предстоящих занятиях.'
+            });
         }
 
         if (text === '/unsubscribe') {
             setNotify(userId, false);
             logger.info('Уведомления отключены для ', userId);
-            return bot.sendMessage(msg.chat.id, 'Уведомления отключены.');
+            return bot.api.sendMessage({
+                chat_id: ctx.chat.id,
+                text: 'Уведомления отключены.'
+            });
         }
 
         if (!userPhone) {
-            return bot.sendMessage(msg.chat.id, 'Для работы с CRM нужен ваш номер телефона', {
+            return bot.api.sendMessage({
+                chat_id: ctx.chat.id,
+                text: 'Для работы с CRM нужен ваш номер телефона',
                 reply_markup: {
                     keyboard: [[{ text: '📱 Отправить номер телефона', request_contact: true }]],
                     resize_keyboard: true,
@@ -70,15 +98,23 @@ function handleText(bot) {
             });
         }
 
-        // 2. Выносим общую логику CRM, чтобы не дублировать try/catch
+        // Выносим общую логику CRM, чтобы не дублировать try/catch
         if (text === '/lessonstotal' || text === '/nextlesson') {
             try {
                 const client = await getClientData(userPhone);
-                if (!client) return bot.sendMessage(msg.chat.id, 'Клиент не найден в CRM');
+                if (!client) {
+                    return bot.api.sendMessage({
+                        chat_id: ctx.chat.id,
+                        text: 'Клиент не найден в CRM'
+                    });
+                }
 
                 if (text === '/lessonstotal') {
                     const lessonsText = pluralize(client.paid_count, 'урок', 'урока', 'уроков');
-                    await bot.sendMessage(msg.chat.id, `У вас осталось ${client.paid_count} ${lessonsText}`);
+                    await bot.api.sendMessage({
+                        chat_id: ctx.chat.id,
+                        text: `У вас осталось ${client.paid_count} ${lessonsText}`
+                    });
                     logger.info('Отправлены данные об оставшихся уроках', {
                         name: client.name,
                         paidCount: client.paid_count,
@@ -88,10 +124,13 @@ function handleText(bot) {
                         name: client.name,
                         nextLesson: client.next_lesson_date,
                     });
-                    const message = client.next_lesson_date
+                    const messageText = client.next_lesson_date
                         ? `Дата следующего урока – ${client.next_lesson_date}`
                         : 'Урок не запланирован';
-                    await bot.sendMessage(msg.chat.id, message);
+                    await bot.api.sendMessage({
+                        chat_id: ctx.chat.id,
+                        text: messageText
+                    });
                 }
             } catch (e) {
                 logger.error('CRM Error', {
@@ -99,7 +138,10 @@ function handleText(bot) {
                     user_id: userId,
                     phone: userPhone
                 });
-                await bot.sendMessage(msg.chat.id, 'Ошибка при запросе к CRM. Попробуйте еще раз');
+                await bot.api.sendMessage({
+                    chat_id: ctx.chat.id,
+                    text: 'Ошибка при запросе к CRM. Попробуйте еще раз'
+                });
             }
         }
     };

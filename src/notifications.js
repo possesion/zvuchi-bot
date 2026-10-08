@@ -89,7 +89,7 @@ async function getClientDataWithRetry(phone, retries = 1) {
  *   - если урок уже прошёл (now >= lessonDate) — помечаем sent без отправки;
  *   - иначе (в окне < 24ч до урока) — атомарно markSent и отправляем уведомление.
  * Защита от двойной отправки: атомарный markSent() — только один вызов пройдёт.
- * @param {import('node-telegram-bot-api')} bot
+ * @param {import('node-telegram-bot-api').Bot} bot
  */
 async function processDueNotifications(bot) {
     const now = Date.now();
@@ -122,12 +122,18 @@ async function processDueNotifications(bot) {
             }
 
             try {
-                await bot.sendMessage(userId, formatNotificationMessage({
-                    name: row.name,
-                    next_lesson_date: row.next_lesson_date,
-                    paid_count: row.paid_count ?? null,
-                }));
+                await bot.api.sendMessage({
+                    chat_id: userId,
+                    text: formatNotificationMessage({
+                        name: row.name,
+                        next_lesson_date: row.next_lesson_date,
+                        paid_count: row.paid_count ?? null,
+                    })
+                });
                 logger.info('Уведомление отправлено пользователю', { name });
+                
+                // Добавляем небольшую задержку между отправками для избежания 429
+                await new Promise(resolve => setTimeout(resolve, 100));
             } catch (e) {
                 logger.error('Ошибка отправки уведомления', { userId, name, error: e.message, stack: e.stack });
             }
@@ -142,7 +148,7 @@ async function processDueNotifications(bot) {
  * Вызывается ежедневно cron'ом или при подписке пользователя (/notify).
  * Отправку уведомлений выполняет отдельный cron через processDueNotifications.
  * При ошибке CRM — только console.error, без сообщений пользователю.
- * @param {import('node-telegram-bot-api')} bot
+ * @param {import('node-telegram-bot-api').Bot} bot
  * @param {number[]|null} userIds - список user_id или null для всех подписчиков
  */
 async function syncSchedule(bot, userIds = null) {
@@ -180,6 +186,9 @@ async function syncSchedule(bot, userIds = null) {
             const lessonDate = parseLessonDate(clientData.next_lesson_date);
             const scheduledAt = lessonDate.getTime() - 24 * 60 * 60 * 1000;
             setSchedule(user.user_id, clientData.next_lesson_date, scheduledAt, clientData.name, clientData.paid_count ?? null);
+            
+            // Добавляем небольшую задержку между запросами к CRM для избежания 429
+            await new Promise(resolve => setTimeout(resolve, 200));
         } catch (error) {
             logger.error('Ошибка при обработке пользователя', { userId: user.user_id, error: error.message, stack: error.stack });
         }
