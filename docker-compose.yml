@@ -47,7 +47,7 @@ services:
   grafana:
     image: grafana/grafana:10.2.3
     ports:
-      - "94.228.169.249:3001:3000"
+      - "77.221.154.153:3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro

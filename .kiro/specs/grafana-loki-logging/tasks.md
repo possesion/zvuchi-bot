@@ -133,7 +133,7 @@ This implementation plan integrates centralized structured logging into the Zvuc
   
   - [x] 5.3 Add Grafana service to docker-compose.yml
     - Add `grafana` service using grafana/grafana:10.2.3 image
-    - Bind to `94.228.169.249:3001:3000`
+    - Bind to `77.221.154.153:3001:3000`
     - Mount named volume `grafana-data` to `/var/lib/grafana`
     - Mount `./config/grafana-datasources.yml` to provisioning directory (read-only)
     - Use `${GF_SECURITY_ADMIN_USER:?GF_SECURITY_ADMIN_USER must be set in .env}` syntax for admin user (REQUIRED - no default)
@@ -231,7 +231,7 @@ This implementation plan integrates centralized structured logging into the Zvuc
   - [ ] 9.2 Verify service health
     - Run `docker-compose ps` to check all services are "Up"
     - Check Loki health: `curl http://localhost:3100/ready`
-    - Verify Grafana accessible at http://94.228.169.249:3001
+    - Verify Grafana accessible at http://77.221.154.153:3001
     - _Requirements: 3.1-3.3, 9.3-9.5_
   
   - [ ] 9.3 Verify log output format
@@ -242,7 +242,7 @@ This implementation plan integrates centralized structured logging into the Zvuc
     - _Requirements: 1.1-1.6_
   
   - [ ] 9.4 Verify Loki integration
-    - Access Grafana at http://94.228.169.249:3001
+    - Access Grafana at http://77.221.154.153:3001
     - Login with credentials from .env
     - Navigate to Explore view
     - Verify Loki is default data source
