@@ -45,7 +45,11 @@ async function getAuthToken() {
 
         throw new Error('Не удалось получить токен: ' + JSON.stringify(data));
     } catch (error) {
-        logger.error('Ошибка получения токена от CRM', { error, hostname });
+        logger.error('Ошибка получения токена от CRM', { 
+            errorMessage: error.message, 
+            errorStack: error.stack,
+            hostname 
+        });
         throw error;
     }
 }
@@ -91,7 +95,10 @@ async function apiRequest(url, payload) {
 
         return await response.json();
     } catch (error) {
-        logger.error('Ошибка API запроса', { error });
+        logger.error('Ошибка API запроса', { 
+            errorMessage: error.message, 
+            errorStack: error.stack 
+        });
         throw error;
     }
 }
