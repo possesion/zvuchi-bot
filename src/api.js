@@ -47,6 +47,7 @@ async function getAuthToken() {
     } catch (error) {
         logger.error('Ошибка получения токена от CRM', { 
             errorMessage: error.message, 
+            errorCause: error.cause?.message || error.cause || 'no cause',
             errorStack: error.stack,
             hostname 
         });
@@ -97,6 +98,7 @@ async function apiRequest(url, payload) {
     } catch (error) {
         logger.error('Ошибка API запроса', { 
             errorMessage: error.message, 
+            errorCause: error.cause?.message || error.cause || 'no cause',
             errorStack: error.stack 
         });
         throw error;
