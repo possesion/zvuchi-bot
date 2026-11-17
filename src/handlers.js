@@ -16,6 +16,9 @@ function handleContact(bot) {
         
         if (!userId) return;
 
+        // Проверяем, ждём ли мы контакт для подключения уведомлений
+        const waitingForNotify = !getPhone(userId);
+        
         if (contact.user_id === userId) {
             savePhone(userId, phoneNumber);
             logger.info('Получен и сохранен номер телефона', {
@@ -23,13 +26,29 @@ function handleContact(bot) {
                 phone: phoneNumber
             });
 
-            await bot.api.sendMessage({
-                chat_id: ctx.chat.id,
-                text: `Спасибо! Ваш номер ${phoneNumber} сохранен`,
-                reply_markup: {
-                    remove_keyboard: true
-                }
-            });
+            // Если это новый пользователь через /notify — включаем уведомления
+            if (waitingForNotify) {
+                setNotify(userId, true);
+                syncSchedule(bot, [userId]).catch(e => logger.error('Ошибка syncSchedule при handleContact', {
+                    error: e,
+                    user_id: userId
+                }));
+                await bot.api.sendMessage({
+                    chat_id: ctx.chat.id,
+                    text: `Спасибо! Ваш номер ${phoneNumber} сохранен. Уведомления включены!`,
+                    reply_markup: {
+                        remove_keyboard: true
+                    }
+                });
+            } else {
+                await bot.api.sendMessage({
+                    chat_id: ctx.chat.id,
+                    text: `Спасибо! Ваш номер ${phoneNumber} сохранен`,
+                    reply_markup: {
+                        remove_keyboard: true
+                    }
+                });
+            }
         }
     }
 }

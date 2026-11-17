@@ -68,6 +68,8 @@ function getPhone(userId) {
 }
 
 function setNotify(userId, notify) {
+    // Сначала убедимся, что пользователь существует
+    db.prepare('INSERT OR IGNORE INTO users (user_id) VALUES (?)').run(userId);
     const stmt = db.prepare('UPDATE users SET notify = ? WHERE user_id = ?');
     stmt.run(notify ? 1 : 0, userId);
 }
