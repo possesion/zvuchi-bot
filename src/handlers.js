@@ -8,6 +8,7 @@ function handleContact(bot) {
     return async (ctx) => {
         // В v2 структура немного другая, но поля остаются теми же
         const contact = ctx.message?.contact;
+        logger.info('CTX структура: ', { ctx });
         if (!contact) return;
 
         const phoneNumber = contact.phone_number;
@@ -35,6 +36,7 @@ function handleContact(bot) {
 
 function handleText(bot) {
     return async (ctx) => {
+        logger.info('MSG структура: ', { ctx });
         // В v2: ctx.message содержит само сообщение
         const message = ctx.message;
         if (!message || !message.text) return; // Пропускаем не-текстовые сообщения
