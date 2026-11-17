@@ -3,7 +3,7 @@ require('dotenv').config();
 const cron = require('node-cron');
 const logger = require('./src/logger');
 
-const { handleContact, handleText } = require('./src/handlers');
+const { handleText } = require('./src/handlers');
 const { syncSchedule, processDueNotifications } = require('./src/notifications');
 const { startHealthcheckServer } = require('./src/healthcheck');
 
@@ -22,8 +22,7 @@ bot.catch((err, ctx) => {
     });
 });
 
-// Регистрируем обработчики (порядок важен в v2!)
-bot.on('contact', handleContact(bot));
+// Регистрируем обработчик сообщений (включает контакты и текст)
 bot.on('message', handleText(bot));
 
 // Запускаем синхронизацию расписания каждый день в 00:00 и 13:00 по московскому времени

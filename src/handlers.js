@@ -4,63 +4,62 @@ const { getClientData } = require('./api');
 const { pluralize } = require('./utils');
 const { syncSchedule } = require('./notifications');
 
-function handleContact(bot) {
-    return async (ctx) => {
-        // В v2 структура немного другая, но поля остаются теми же
-        const contact = ctx.message?.contact;
-        logger.info('CTX структура: ', { ctx });
-        if (!contact) return;
-
-        const phoneNumber = contact.phone_number;
-        const userId = ctx.from?.id;
-        
-        if (!userId) return;
-
-        // Проверяем, ждём ли мы контакт для подключения уведомлений
-        const waitingForNotify = !getPhone(userId);
-        
-        if (contact.user_id === userId) {
-            savePhone(userId, phoneNumber);
-            logger.info('Получен и сохранен номер телефона', {
-                user_id: userId,
-                phone: phoneNumber
-            });
-
-            // Если это новый пользователь через /notify — включаем уведомления
-            if (waitingForNotify) {
-                setNotify(userId, true);
-                syncSchedule(bot, [userId]).catch(e => logger.error('Ошибка syncSchedule при handleContact', {
-                    error: e,
-                    user_id: userId
-                }));
-                await bot.api.sendMessage({
-                    chat_id: ctx.chat.id,
-                    text: `Спасибо! Ваш номер ${phoneNumber} сохранен. Уведомления включены!`,
-                    reply_markup: {
-                        remove_keyboard: true
-                    }
-                });
-            } else {
-                await bot.api.sendMessage({
-                    chat_id: ctx.chat.id,
-                    text: `Спасибо! Ваш номер ${phoneNumber} сохранен`,
-                    reply_markup: {
-                        remove_keyboard: true
-                    }
-                });
-            }
-        }
-    }
-}
-
 function handleText(bot) {
     return async (ctx) => {
         logger.info('MSG структура: ', { ctx });
         // В v2: ctx.message содержит само сообщение
         const message = ctx.message;
-        if (!message || !message.text) return; // Пропускаем не-текстовые сообщения
+        if (!message) return;
 
         const userId = ctx.from?.id;
+        
+        // Обработка контакта (приходит внутри message)
+        if (message.contact) {
+            const contact = message.contact;
+            const phoneNumber = contact.phone_number;
+            
+            if (!userId) return;
+
+            // Проверяем, ждём ли мы контакт для подключения уведомлений
+            const waitingForNotify = !getPhone(userId);
+            
+            if (contact.user_id === userId) {
+                savePhone(userId, phoneNumber);
+                logger.info('Получен и сохранен номер телефона', {
+                    user_id: userId,
+                    phone: phoneNumber
+                });
+
+                // Если это новый пользователь через /notify — включаем уведомления
+                if (waitingForNotify) {
+                    setNotify(userId, true);
+                    syncSchedule(bot, [userId]).catch(e => logger.error('Ошибка syncSchedule при handleContact', {
+                        error: e,
+                        user_id: userId
+                    }));
+                    await bot.api.sendMessage({
+                        chat_id: ctx.chat.id,
+                        text: `Спасибо! Ваш номер ${phoneNumber} сохранен. Уведомления включены!`,
+                        reply_markup: {
+                            remove_keyboard: true
+                        }
+                    });
+                } else {
+                    await bot.api.sendMessage({
+                        chat_id: ctx.chat.id,
+                        text: `Спасибо! Ваш номер ${phoneNumber} сохранен`,
+                        reply_markup: {
+                            remove_keyboard: true
+                        }
+                    });
+                }
+            }
+            return;
+        }
+
+        // Пропускаем не-текстовые сообщения (кроме контактов, обработаны выше)
+        if (!message.text) return;
+
         const text = message.text;
         
         if (!userId) return;
@@ -169,6 +168,5 @@ function handleText(bot) {
 }
 
 module.exports = {
-    handleContact,
     handleText
 };
